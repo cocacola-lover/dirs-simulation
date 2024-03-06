@@ -27,16 +27,20 @@ func (n *BaseNode) Receive(key string, val string) {
 		n.store[key] = val
 	})
 
+	removalCounter := 0
 	for i, r := range n.requests {
 		if r.key == key {
 			go r.from.Receive(key, val)
 			utils.WithLockedNoResult(&n.requestsLock, func() {
 				// Remove from array
-				n.requests[i] = n.requests[len(n.requests)-1]
+				n.requests[i-removalCounter] = n.requests[len(n.requests)-1]
 				n.requests = n.requests[:len(n.requests)-1]
+
+				removalCounter++
 			})
 		}
 	}
+
 }
 
 func (n *BaseNode) Ask(key string, from *BaseNode) {
@@ -45,10 +49,31 @@ func (n *BaseNode) Ask(key string, from *BaseNode) {
 	if ok {
 		go from.Receive(key, val)
 	} else {
+
+		if len(n.friends) == 0 {
+			return
+		}
+
+		if len(n.friends) == 1 && n.friends[0] == from {
+			return
+		}
+
 		utils.WithLockedNoResult(&n.requestsLock, func() {
 			n.requests = append(n.requests, _Request{
 				from: from, key: key,
 			})
 		})
+
+		for _, friend := range n.friends {
+			if friend == from {
+				continue
+			}
+			go friend.Ask(key, n)
+		}
+
 	}
+}
+
+func NewBaseNode() *BaseNode {
+	return &BaseNode{store: make(map[string]string)}
 }
