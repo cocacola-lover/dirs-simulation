@@ -62,3 +62,32 @@ func Test_IsConnected(t *testing.T) {
 	}
 
 }
+
+func Test_GetConnectedGroups(t *testing.T) {
+	g := _NewGraph(6)
+
+	test1 := g.GetConnectedGroups()
+	t.Logf("Test1 : %v", test1)
+	if len(test1) != 6 {
+		t.Error("Error on test 1")
+	}
+
+	g._SetPath(3, 2, true)
+	g._SetPath(3, 4, true)
+	g._SetPath(3, 1, true)
+
+	test2 := g.GetConnectedGroups()
+	t.Logf("Test2 : %v", test2)
+	if len(test2) != 3 {
+		t.Error("Error on test 2")
+	}
+
+	g._SetPath(0, 5, true)
+	g._SetPath(2, 0, true)
+
+	test3 := g.GetConnectedGroups()
+	t.Logf("Test3 : %v", test3)
+	if len(test3) != 1 {
+		t.Error("Error on test 3")
+	}
+}
