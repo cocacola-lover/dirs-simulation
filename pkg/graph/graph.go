@@ -139,10 +139,10 @@ func (g Graph) GetPaths(n int) ([]int, bool) {
 	return ans, true
 }
 
-func _NewGraph(length int) Graph {
-	grid := make([][]bool, length)
+func NewGraph(size int) Graph {
+	grid := make([][]bool, size)
 
-	for i := 1; i < length; i++ {
+	for i := 1; i < size; i++ {
 		grid[i] = make([]bool, i)
 	}
 
