@@ -38,3 +38,27 @@ func TestGraph_GetPaths(t *testing.T) {
 		t.Fatalf("Forth test failed. Expected : %v - but got : %v", test4, ans4)
 	}
 }
+
+func Test_IsConnected(t *testing.T) {
+	g := _NewGraph(6)
+
+	if g.IsConnected() {
+		t.Fatal("Error on test 1")
+	}
+
+	g._SetPath(3, 2, true)
+	g._SetPath(3, 4, true)
+	g._SetPath(3, 1, true)
+
+	if g.IsConnected() {
+		t.Fatal("Error on test 2")
+	}
+
+	g._SetPath(0, 5, true)
+	g._SetPath(2, 0, true)
+
+	if !g.IsConnected() {
+		t.Fatal("Error on test 3")
+	}
+
+}
