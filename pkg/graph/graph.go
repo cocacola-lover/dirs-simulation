@@ -1,6 +1,9 @@
 package graph
 
-import "slices"
+import (
+	"fmt"
+	"slices"
+)
 
 // Undirected unweighted graph
 type Graph struct {
@@ -147,4 +150,15 @@ func NewGraph(size int) Graph {
 	}
 
 	return Graph{grid: grid}
+}
+
+func (g Graph) String() string {
+	ans := "\n"
+
+	for i := 0; i < len(g.grid); i++ {
+		paths, _ := g.GetPaths(i)
+		ans += fmt.Sprintf("%d : %v \n", i, paths)
+	}
+
+	return ans
 }
