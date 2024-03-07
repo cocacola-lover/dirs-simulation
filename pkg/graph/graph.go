@@ -1,16 +1,35 @@
 package graph
 
+import "slices"
+
 // Undirected unweighted graph
 type Graph struct {
 	grid [][]bool
 }
 
-func (g *Graph) _SetPath(n1 int, n2 int, exists bool) {
-	g.grid[max(n1, n2)][min(n1, n2)] = exists
+func (g Graph) Len() int {
+	return len(g.grid)
 }
 
-func (g Graph) HasPath(n1, n2 int) bool {
-	return g.grid[max(n1, n2)][min(n1, n2)]
+func (g Graph) _IsOutOfBounds(args ...int) bool {
+	return slices.Max(args) >= g.Len()
+}
+
+// Returns ok - false, if index out of bounds
+func (g *Graph) _SetPath(n1 int, n2 int, exists bool) bool {
+	if g._IsOutOfBounds(n1, n2) {
+		return false
+	}
+	g.grid[max(n1, n2)][min(n1, n2)] = exists
+	return true
+}
+
+// Returns ok - false, if index out of bounds
+func (g Graph) HasPath(n1, n2 int) (bool, bool) {
+	if g._IsOutOfBounds(n1, n2) {
+		return false, false
+	}
+	return g.grid[max(n1, n2)][min(n1, n2)], true
 }
 
 func (g Graph) IsConnected() bool {
@@ -98,8 +117,12 @@ func (g Graph) GetConnectedGroups() [][]int {
 	return ans
 }
 
-func (g Graph) GetPaths(n int) []int {
+// Returns ok - false, if index out of bounds
+func (g Graph) GetPaths(n int) ([]int, bool) {
 	ans := []int{}
+	if g._IsOutOfBounds(n) {
+		return ans, false
+	}
 
 	for i := 0; i < n; i++ {
 		if g.grid[n][i] {
@@ -113,7 +136,7 @@ func (g Graph) GetPaths(n int) []int {
 		}
 	}
 
-	return ans
+	return ans, true
 }
 
 func _NewGraph(length int) Graph {

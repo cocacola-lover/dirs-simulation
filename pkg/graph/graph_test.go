@@ -12,10 +12,10 @@ func TestGraph_GetPaths(t *testing.T) {
 	g._SetPath(3, 4, true)
 	g._SetPath(3, 1, true)
 
-	test1 := g.GetPaths(1)
-	test2 := g.GetPaths(2)
-	test3 := g.GetPaths(3)
-	test4 := g.GetPaths(4)
+	test1, _ := g.GetPaths(1)
+	test2, _ := g.GetPaths(2)
+	test3, _ := g.GetPaths(3)
+	test4, _ := g.GetPaths(4)
 
 	ans1 := []int{3}
 	ans2 := []int{3}
