@@ -9,7 +9,7 @@ func NewRandomGraph(size, degree int) Graph {
 		return g
 	}
 
-	probability := (2 * float64(degree)) / float64(size-1)
+	probability := (float64(degree)) / float64(size-1)
 
 	for i := 0; i < size-1; i++ {
 		for j := i + 1; j < size; j++ {
