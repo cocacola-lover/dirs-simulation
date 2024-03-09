@@ -8,9 +8,9 @@ import (
 func TestGraph_GetPaths(t *testing.T) {
 	g := NewGraph(5)
 
-	g._SetPath(3, 2, true)
-	g._SetPath(3, 4, true)
-	g._SetPath(3, 1, true)
+	g.SetPath(3, 2, true)
+	g.SetPath(3, 4, true)
+	g.SetPath(3, 1, true)
 
 	test1, _ := g.GetPaths(1)
 	test2, _ := g.GetPaths(2)
@@ -46,16 +46,16 @@ func Test_IsConnected(t *testing.T) {
 		t.Fatal("Error on test 1")
 	}
 
-	g._SetPath(3, 2, true)
-	g._SetPath(3, 4, true)
-	g._SetPath(3, 1, true)
+	g.SetPath(3, 2, true)
+	g.SetPath(3, 4, true)
+	g.SetPath(3, 1, true)
 
 	if g.IsConnected() {
 		t.Fatal("Error on test 2")
 	}
 
-	g._SetPath(0, 5, true)
-	g._SetPath(2, 0, true)
+	g.SetPath(0, 5, true)
+	g.SetPath(2, 0, true)
 
 	if !g.IsConnected() {
 		t.Fatal("Error on test 3")
@@ -72,9 +72,9 @@ func Test_GetConnectedGroups(t *testing.T) {
 		t.Error("Error on test 1")
 	}
 
-	g._SetPath(3, 2, true)
-	g._SetPath(3, 4, true)
-	g._SetPath(3, 1, true)
+	g.SetPath(3, 2, true)
+	g.SetPath(3, 4, true)
+	g.SetPath(3, 1, true)
 
 	test2 := g.GetConnectedGroups()
 	t.Logf("Test2 : %v", test2)
@@ -82,8 +82,8 @@ func Test_GetConnectedGroups(t *testing.T) {
 		t.Error("Error on test 2")
 	}
 
-	g._SetPath(0, 5, true)
-	g._SetPath(2, 0, true)
+	g.SetPath(0, 5, true)
+	g.SetPath(2, 0, true)
 
 	test3 := g.GetConnectedGroups()
 	t.Logf("Test3 : %v", test3)

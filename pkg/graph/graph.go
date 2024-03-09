@@ -19,7 +19,7 @@ func (g Graph) _IsOutOfBounds(args ...int) bool {
 }
 
 // Returns ok - false, if index out of bounds
-func (g *Graph) _SetPath(n1 int, n2 int, exists bool) bool {
+func (g *Graph) SetPath(n1 int, n2 int, exists bool) bool {
 	if g._IsOutOfBounds(n1, n2) {
 		return false
 	}

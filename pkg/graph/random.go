@@ -13,7 +13,7 @@ func NewRandomGraph(size, degree int) Graph {
 
 	for i := 0; i < size-1; i++ {
 		for j := i + 1; j < size; j++ {
-			g._SetPath(i, j, probability >= rand.Float64())
+			g.SetPath(i, j, probability >= rand.Float64())
 		}
 	}
 
@@ -29,7 +29,7 @@ func NewRandomConnectedGraph(size, degree int) Graph {
 		for i := 0; i < len(cg)-1; i++ {
 			from := cg[i][rand.Intn(len(cg[i]))]
 			to := cg[i+1][rand.Intn(len(cg[i+1]))]
-			g._SetPath(from, to, true)
+			g.SetPath(from, to, true)
 		}
 	}
 
