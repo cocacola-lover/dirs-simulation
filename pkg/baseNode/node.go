@@ -1,6 +1,7 @@
 package basenode
 
 import (
+	netp "dirs/simulation/pkg/network"
 	"dirs/simulation/pkg/utils"
 	"sync"
 )
@@ -13,12 +14,7 @@ type BaseNode struct {
 	requests     []_Request
 	requestsLock sync.Mutex
 
-	friends []*BaseNode
-}
-
-// There is NO LOCK for Friends setter
-func (n *BaseNode) SetFriends(friends []*BaseNode) {
-	n.friends = friends
+	network *netp.Network[BaseNode]
 }
 
 func (n *BaseNode) Receive(key string, val string) {
@@ -50,11 +46,13 @@ func (n *BaseNode) Ask(key string, from *BaseNode) {
 		go from.Receive(key, val)
 	} else {
 
-		if len(n.friends) == 0 {
+		friends := n.network.GetFriends(n)
+
+		if len(friends) == 0 {
 			return
 		}
 
-		if len(n.friends) == 1 && n.friends[0] == from {
+		if len(friends) == 1 && friends[0] == from {
 			return
 		}
 
@@ -64,7 +62,7 @@ func (n *BaseNode) Ask(key string, from *BaseNode) {
 			})
 		})
 
-		for _, friend := range n.friends {
+		for _, friend := range friends {
 			if friend == from {
 				continue
 			}
@@ -74,6 +72,6 @@ func (n *BaseNode) Ask(key string, from *BaseNode) {
 	}
 }
 
-func NewBaseNode() *BaseNode {
-	return &BaseNode{store: make(map[string]string)}
+func NewBaseNode(net *netp.Network[BaseNode]) *BaseNode {
+	return &BaseNode{store: make(map[string]string), network: net}
 }
