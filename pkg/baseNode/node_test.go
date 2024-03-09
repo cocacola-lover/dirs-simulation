@@ -32,8 +32,8 @@ func TestBaseNode_Receive(t *testing.T) {
 			return NewBaseNode(net)
 		}, 3)
 
-		net.SetPath(0, 1, true)
-		net.SetPath(0, 2, true)
+		net.SetPath(0, 1, 1)
+		net.SetPath(0, 2, 1)
 
 		net.Get(0).requests = append(net.Get(0).requests, _Request{key: "key", from: net.Get(1)}, _Request{key: "key", from: net.Get(2)})
 
@@ -60,7 +60,7 @@ func TestBaseNode_Ask(t *testing.T) {
 
 		net.Get(0).store["key"] = "value"
 
-		net.SetPath(0, 1, true)
+		net.SetPath(0, 1, 1)
 
 		net.Get(0).Ask("key", net.Get(1))
 
@@ -78,8 +78,8 @@ func TestBaseNode_Ask(t *testing.T) {
 			return NewBaseNode(net)
 		}, 3)
 
-		net.SetPath(0, 1, true)
-		net.SetPath(1, 2, true)
+		net.SetPath(0, 1, 1)
+		net.SetPath(1, 2, 1)
 
 		net.Get(2).store["key"] = "value"
 

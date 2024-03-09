@@ -6,7 +6,7 @@ import (
 )
 
 func TestGraph_GetPaths(t *testing.T) {
-	g := NewGraph(5)
+	g := NewGraph[bool](5)
 
 	g.SetPath(3, 2, true)
 	g.SetPath(3, 4, true)
@@ -40,7 +40,7 @@ func TestGraph_GetPaths(t *testing.T) {
 }
 
 func Test_IsConnected(t *testing.T) {
-	g := NewGraph(6)
+	g := NewGraph[bool](6)
 
 	if g.IsConnected() {
 		t.Fatal("Error on test 1")
@@ -64,7 +64,7 @@ func Test_IsConnected(t *testing.T) {
 }
 
 func Test_GetConnectedGroups(t *testing.T) {
-	g := NewGraph(6)
+	g := NewGraph[bool](6)
 
 	test1 := g.GetConnectedGroups()
 	t.Logf("Test1 : %v", test1)

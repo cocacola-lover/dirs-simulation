@@ -4,10 +4,8 @@ import gp "dirs/simulation/pkg/graph"
 
 type INode interface{}
 
-type Graph = gp.Graph
-
 type Network[Node INode] struct {
-	Graph
+	gp.Graph[int]
 	nodes     []*Node
 	phoneBook map[*Node]int
 }
@@ -45,7 +43,7 @@ func _NewWithoutGraphNetwork[T INode](initNode func(net *Network[T], i int) *T, 
 func NewEmptyNetwork[T INode](initNode func(net *Network[T], i int) *T, size int) *Network[T] {
 	network := _NewWithoutGraphNetwork[T](initNode, size)
 
-	network.Graph = gp.NewGraph(size)
+	network.Graph = gp.NewGraph[int](size)
 
 	return network
 }
@@ -54,7 +52,7 @@ func NewRandomNetwork[T INode](initNode func(net *Network[T], i int) *T, size in
 
 	network := _NewWithoutGraphNetwork[T](initNode, size)
 
-	network.Graph = gp.NewRandomConnectedGraph(size, degree)
+	network.Graph = gp.NewRandomConnectedGraph[int](size, degree, func() int { return 1 })
 
 	return network
 }

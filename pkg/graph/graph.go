@@ -1,41 +1,42 @@
 package graph
 
 import (
+	"dirs/simulation/pkg/utils"
 	"fmt"
 	"slices"
 )
 
 // Undirected unweighted graph
-type Graph struct {
-	grid [][]bool
+type Graph[T comparable] struct {
+	grid [][]T
 }
 
-func (g Graph) Len() int {
+func (g Graph[T]) Len() int {
 	return len(g.grid)
 }
 
-func (g Graph) _IsOutOfBounds(args ...int) bool {
+func (g Graph[T]) _IsOutOfBounds(args ...int) bool {
 	return slices.Max(args) >= g.Len()
 }
 
 // Returns ok - false, if index out of bounds
-func (g *Graph) SetPath(n1 int, n2 int, exists bool) bool {
+func (g *Graph[T]) SetPath(n1 int, n2 int, val T) bool {
 	if g._IsOutOfBounds(n1, n2) {
 		return false
 	}
-	g.grid[max(n1, n2)][min(n1, n2)] = exists
+	g.grid[max(n1, n2)][min(n1, n2)] = val
 	return true
 }
 
 // Returns ok - false, if index out of bounds
-func (g Graph) HasPath(n1, n2 int) (bool, bool) {
+func (g Graph[T]) HasPath(n1, n2 int) (T, bool) {
 	if g._IsOutOfBounds(n1, n2) {
-		return false, false
+		return utils.ZeroValue[T](), false
 	}
 	return g.grid[max(n1, n2)][min(n1, n2)], true
 }
 
-func (g Graph) IsConnected() bool {
+func (g Graph[T]) IsConnected() bool {
 	if len(g.grid) == 0 {
 		return true
 	}
@@ -52,13 +53,13 @@ func (g Graph) IsConnected() bool {
 		set[n] = true
 
 		for i := 0; i < n; i++ {
-			if g.grid[n][i] {
+			if g.grid[n][i] != utils.ZeroValue[T]() {
 				recursiveSearch(i)
 			}
 		}
 
 		for i := n + 1; i < len(g.grid); i++ {
-			if g.grid[i][n] {
+			if g.grid[i][n] != utils.ZeroValue[T]() {
 				recursiveSearch(i)
 			}
 		}
@@ -69,7 +70,7 @@ func (g Graph) IsConnected() bool {
 	return len(set) == len(g.grid)
 }
 
-func (g Graph) GetConnectedGroups() [][]int {
+func (g Graph[T]) GetConnectedGroups() [][]int {
 	if len(g.grid) == 0 {
 		return make([][]int, 1)
 	}
@@ -101,13 +102,13 @@ func (g Graph) GetConnectedGroups() [][]int {
 			group = append(group, n)
 
 			for i := 0; i < n; i++ {
-				if g.grid[n][i] {
+				if g.grid[n][i] != utils.ZeroValue[T]() {
 					recursiveSearch(i)
 				}
 			}
 
 			for i := n + 1; i < len(g.grid); i++ {
-				if g.grid[i][n] {
+				if g.grid[i][n] != utils.ZeroValue[T]() {
 					recursiveSearch(i)
 				}
 			}
@@ -121,20 +122,20 @@ func (g Graph) GetConnectedGroups() [][]int {
 }
 
 // Returns ok - false, if index out of bounds
-func (g Graph) GetPaths(n int) ([]int, bool) {
+func (g Graph[T]) GetPaths(n int) ([]int, bool) {
 	ans := []int{}
 	if g._IsOutOfBounds(n) {
 		return ans, false
 	}
 
 	for i := 0; i < n; i++ {
-		if g.grid[n][i] {
+		if g.grid[n][i] != utils.ZeroValue[T]() {
 			ans = append(ans, i)
 		}
 	}
 
 	for i := n + 1; i < len(g.grid); i++ {
-		if g.grid[i][n] {
+		if g.grid[i][n] != utils.ZeroValue[T]() {
 			ans = append(ans, i)
 		}
 	}
@@ -142,17 +143,17 @@ func (g Graph) GetPaths(n int) ([]int, bool) {
 	return ans, true
 }
 
-func NewGraph(size int) Graph {
-	grid := make([][]bool, size)
+func NewGraph[T comparable](size int) Graph[T] {
+	grid := make([][]T, size)
 
 	for i := 1; i < size; i++ {
-		grid[i] = make([]bool, i)
+		grid[i] = make([]T, i)
 	}
 
-	return Graph{grid: grid}
+	return Graph[T]{grid: grid}
 }
 
-func (g Graph) String() string {
+func (g Graph[T]) String() string {
 	ans := "\n"
 
 	for i := 0; i < len(g.grid); i++ {
