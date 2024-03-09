@@ -13,3 +13,8 @@ func WithLockedNoResult(lock *sync.Mutex, fu func()) {
 	defer lock.Unlock()
 	fu()
 }
+
+func ZeroValue[T any]() T {
+	var ans T
+	return ans
+}
