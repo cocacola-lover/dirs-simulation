@@ -47,6 +47,12 @@ func (s *UrgencyScheduler) Close() {
 	close(s.activationChan)
 }
 
+func (s *UrgencyScheduler) InnerTimer() int {
+	return utils.WithLocked(&s.innerTimerLock, func() int {
+		return s.innerTimer
+	})
+}
+
 func NewUrgencyScheduler(fu func()) *UrgencyScheduler {
 	ans := UrgencyScheduler{fu: fu, activationChan: make(chan int)}
 
