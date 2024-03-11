@@ -15,3 +15,13 @@ func TestSameValues(t *testing.T) {
 		t.Fatal("Error on test 3")
 	}
 }
+
+func TestFilter(t *testing.T) {
+	if !SameValues(Filter([]int{1, 2, 3, 4, 5, 6}, func(val, ind int) bool {
+		return val%2 == 0
+	}), []int{2, 4, 6}) {
+		t.Fatalf("Error on test 1. Got : %v ; But Expected : %v", Filter([]int{1, 2, 3, 4, 5, 6}, func(val, ind int) bool {
+			return val%2 == 0
+		}), []int{2, 4, 6})
+	}
+}

@@ -40,3 +40,17 @@ func SameValues[T comparable](arr1 []T, arr2 []T) bool {
 
 	return true
 }
+
+// Filters out elements for which filter fn returns false.
+// Filter does not keep the order of the elements.
+func Filter[T any](arr []T, filterFn func(val T, ind int) bool) []T {
+	ans := []T{}
+
+	for i, val := range arr {
+		if filterFn(val, i) {
+			ans = append(ans, val)
+		}
+	}
+
+	return ans
+}
