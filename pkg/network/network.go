@@ -10,6 +10,16 @@ type Network[Node INode] struct {
 	phoneBook map[*Node]int
 }
 
+func (net Network[Node]) GetTunnelWidth(node1, node2 *Node) int {
+	width, ok := net.HasPath(net.phoneBook[node1], net.phoneBook[node2])
+
+	if ok {
+		return width
+	} else {
+		panic("Tried to get TunnelWidth between two nodes that do not have a tunnel")
+	}
+}
+
 func (net Network[Node]) GetFriends(node *Node) []*Node {
 	ans := []*Node{}
 
