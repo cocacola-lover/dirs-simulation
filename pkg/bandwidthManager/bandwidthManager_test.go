@@ -14,7 +14,6 @@ func TestBandwidthManager(t *testing.T) {
 		bm2 := NewBandwidthManager(10, 10)
 
 		bm1.RegisterDownload(100, bm2, 5, func() {
-			t.Log("Download done")
 			if time.Since(expectToRun).Abs() > time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun.Sub(startTime))
 			}
@@ -26,6 +25,54 @@ func TestBandwidthManager(t *testing.T) {
 		time.Sleep(30 * time.Millisecond)
 	})
 
+	t.Run("Simple test, 1 speed", func(t *testing.T) {
+		startTime := time.Now()
+		expectToRun := startTime.Add(100 * time.Millisecond)
+
+		bm1 := NewBandwidthManager(1, 1)
+		bm2 := NewBandwidthManager(1, 1)
+
+		bm1.RegisterDownload(100, bm2, 1, func() {
+			if time.Since(expectToRun).Abs() > 2*time.Millisecond {
+				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun.Sub(startTime))
+			}
+			if bm1.scheduler.InnerTimer() != 2 {
+				t.Errorf("Upload took %v reevaluations, but was expected to take %v", bm1.scheduler.InnerTimer(), 2)
+			}
+		})
+
+		time.Sleep(110 * time.Millisecond)
+	})
+
+	t.Run("Simple test, overflow tasks", func(t *testing.T) {
+		startTime := time.Now()
+		expectToRun1 := startTime.Add(10 * time.Millisecond)
+		expectToRun2 := startTime.Add(15 * time.Millisecond)
+
+		bm1 := NewBandwidthManager(1, 1)
+		bm2 := NewBandwidthManager(1, 1)
+
+		bm1.RegisterDownload(10, bm2, 1, func() {
+			if time.Since(expectToRun1).Abs() > 2*time.Millisecond {
+				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun1.Sub(startTime))
+			}
+			if bm1.scheduler.InnerTimer() != 3 {
+				t.Errorf("Upload took %v reevaluations, but was expected to take %v", bm1.scheduler.InnerTimer(), 3)
+			}
+		})
+
+		bm1.RegisterDownload(5, bm2, 1, func() {
+			if time.Since(expectToRun2).Abs() > 2*time.Millisecond {
+				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun2.Sub(startTime))
+			}
+			if bm1.scheduler.InnerTimer() != 4 {
+				t.Errorf("Upload took %v reevaluations, but was expected to take %v", bm1.scheduler.InnerTimer(), 4)
+			}
+		})
+
+		time.Sleep(110 * time.Millisecond)
+	})
+
 	t.Run("Dual test", func(t *testing.T) {
 		startTime1 := time.Now()
 		expectToRun1 := startTime1.Add(10 * time.Millisecond)
@@ -35,7 +82,6 @@ func TestBandwidthManager(t *testing.T) {
 		bm3 := NewBandwidthManager(10, 10)
 
 		bm1.RegisterDownload(70, bm2, 7, func() {
-			t.Log("Download done")
 			if time.Since(expectToRun1).Abs() > time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime1), expectToRun1.Sub(startTime1))
 			}
@@ -50,12 +96,44 @@ func TestBandwidthManager(t *testing.T) {
 		expectToRun2 := startTime2.Add(11 * time.Millisecond)
 
 		bm1.RegisterDownload(45, bm3, 5, func() {
-			t.Log("Download done")
 			if time.Since(expectToRun2).Abs() > time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime2), expectToRun2.Sub(startTime2))
 			}
 			if bm1.scheduler.InnerTimer() != 4 {
 				t.Errorf("Upload took %v reevaluations, but was expected to take %v", bm1.scheduler.InnerTimer(), 4)
+			}
+		})
+
+		time.Sleep(30 * time.Millisecond)
+	})
+
+	t.Run("Cross download test", func(t *testing.T) {
+		startTime1 := time.Now()
+		expectToRun1 := startTime1.Add(10 * time.Millisecond)
+
+		bm1 := NewBandwidthManager(10, 10)
+		bm2 := NewBandwidthManager(10, 10)
+
+		bm1.RegisterDownload(100, bm2, 12, func() {
+			if time.Since(expectToRun1).Abs() > time.Millisecond {
+				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime1), expectToRun1.Sub(startTime1))
+			}
+			if bm1.scheduler.InnerTimer() != 2 {
+				t.Errorf("Upload took %v reevaluations, but was expected to take %v", bm1.scheduler.InnerTimer(), 2)
+			}
+		})
+
+		time.Sleep(5 * time.Millisecond)
+
+		startTime2 := time.Now()
+		expectToRun2 := startTime2.Add(9 * time.Millisecond)
+
+		bm2.RegisterDownload(45, bm1, 5, func() {
+			if time.Since(expectToRun2).Abs() > time.Millisecond {
+				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime2), expectToRun2.Sub(startTime2))
+			}
+			if bm1.scheduler.InnerTimer() != 2 {
+				t.Errorf("Upload took %v reevaluations, but was expected to take %v", bm1.scheduler.InnerTimer(), 2)
 			}
 		})
 

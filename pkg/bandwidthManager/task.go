@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+const MaxInt = int(^uint(0) >> 1)
+
 type _Task struct {
 	// The size of file in absolute units
 	size int
@@ -23,8 +25,12 @@ func (t _Task) IsDone() bool {
 	return t.done >= t.size
 }
 
-func (t _Task) MsUntilDone() int {
-	return max((t.size-t.done)/t.workingSpeed, 0)
+// Returns not ok, if download speed at zero
+func (t _Task) MsUntilDone() (int, bool) {
+	if t.workingSpeed == 0 {
+		return MaxInt, false
+	}
+	return max((t.size-t.done)/t.workingSpeed, 0), true
 }
 
 func (t *_Task) UpdateProgress() {

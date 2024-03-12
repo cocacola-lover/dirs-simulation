@@ -100,9 +100,10 @@ func (bm *BandwidthManager) _Reevaluate() {
 			return
 		}
 
-		soonestToEnd := bm.downloadTasks[0].MsUntilDone()
+		soonestToEnd, _ := bm.downloadTasks[0].MsUntilDone()
 		for i := 1; i < len(bm.downloadTasks); i++ {
-			soonestToEnd = min(bm.downloadTasks[i].MsUntilDone(), soonestToEnd)
+			newValue, _ := bm.downloadTasks[i].MsUntilDone()
+			soonestToEnd = min(newValue, soonestToEnd)
 		}
 
 		bm._ScheduleReevaluation(soonestToEnd)
