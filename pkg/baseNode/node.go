@@ -23,24 +23,22 @@ func (n *BaseNode) Receive(key string, val string) {
 		n.store[key] = val
 	})
 
-	removalCounter := 0
-	for i, r := range n.requests {
-		if r.key == key {
-			go r.from.Receive(key, val)
-			utils.WithLockedNoResult(&n.requestsLock, func() {
-				// Remove from array
-				n.requests[i-removalCounter] = n.requests[len(n.requests)-1]
-				n.requests = n.requests[:len(n.requests)-1]
-
-				removalCounter++
-			})
-		}
-	}
-
+	utils.WithLockedNoResult(&n.requestsLock, func() {
+		n.requests = utils.Filter(n.requests, func(r _Request, i int) bool {
+			if r.key == key {
+				go r.from.Receive(key, val)
+				return false
+			}
+			return true
+		})
+	})
 }
 
 func (n *BaseNode) Ask(key string, from *BaseNode) {
+
+	n.storeLock.Lock()
 	val, ok := n.store[key]
+	n.storeLock.Unlock()
 
 	if ok {
 		go from.Receive(key, val)
