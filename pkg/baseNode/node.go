@@ -1,6 +1,7 @@
 package basenode
 
 import (
+	bmp "dirs/simulation/pkg/bandwidthManager"
 	netp "dirs/simulation/pkg/network"
 	"dirs/simulation/pkg/utils"
 	"sync"
@@ -14,7 +15,19 @@ type BaseNode struct {
 	requests     []_Request
 	requestsLock sync.Mutex
 
-	network *netp.Network[BaseNode]
+	bandwidthManager *bmp.BandwidthManager
+	network          *netp.Network[BaseNode]
+}
+
+func (n *BaseNode) RegisterDownload(key string, val string, with *BaseNode) {
+	n.bandwidthManager.RegisterDownload(
+		len(val),
+		with.bandwidthManager,
+		n.network.GetTunnelWidth(n, with),
+		func() {
+			with.Receive(key, val)
+		},
+	)
 }
 
 func (n *BaseNode) Receive(key string, val string) {
@@ -26,7 +39,7 @@ func (n *BaseNode) Receive(key string, val string) {
 	utils.WithLockedNoResult(&n.requestsLock, func() {
 		n.requests = utils.Filter(n.requests, func(r _Request, i int) bool {
 			if r.key == key {
-				go r.from.Receive(key, val)
+				n.RegisterDownload(key, val, r.from)
 				return false
 			}
 			return true
@@ -41,7 +54,7 @@ func (n *BaseNode) Ask(key string, from *BaseNode) {
 	n.storeLock.Unlock()
 
 	if ok {
-		go from.Receive(key, val)
+		n.RegisterDownload(key, val, from)
 	} else {
 
 		friends := n.network.GetFriends(n)
@@ -70,6 +83,10 @@ func (n *BaseNode) Ask(key string, from *BaseNode) {
 	}
 }
 
-func NewBaseNode(net *netp.Network[BaseNode]) *BaseNode {
-	return &BaseNode{store: make(map[string]string), network: net}
+func NewBaseNode(net *netp.Network[BaseNode], maxDownload int, maxUpload int) *BaseNode {
+	return &BaseNode{
+		bandwidthManager: bmp.NewBandwidthManager(maxDownload, maxUpload),
+		store:            make(map[string]string),
+		network:          net,
+	}
 }

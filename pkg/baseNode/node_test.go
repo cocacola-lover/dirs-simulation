@@ -10,7 +10,7 @@ func TestBaseNode_Receive(t *testing.T) {
 
 	t.Run("Test single receive", func(t *testing.T) {
 		net := network.NewEmptyNetwork(func(net *network.Network[BaseNode], i int) *BaseNode {
-			return NewBaseNode(net)
+			return NewBaseNode(net, 1, 1)
 		}, 1)
 
 		if len(net.Get(0).store) != 0 {
@@ -29,7 +29,7 @@ func TestBaseNode_Receive(t *testing.T) {
 	t.Run("Test receive and remember to answer", func(t *testing.T) {
 
 		net := network.NewEmptyNetwork(func(net *network.Network[BaseNode], i int) *BaseNode {
-			return NewBaseNode(net)
+			return NewBaseNode(net, 1, 1)
 		}, 3)
 
 		net.SetPath(0, 1, 1)
@@ -39,7 +39,7 @@ func TestBaseNode_Receive(t *testing.T) {
 
 		net.Get(0).Receive("key", "value")
 
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * 11)
 
 		val1, ok1 := net.Get(0).store["key"]
 		val2, ok2 := net.Get(1).store["key"]
@@ -55,7 +55,7 @@ func TestBaseNode_Receive(t *testing.T) {
 func TestBaseNode_Ask(t *testing.T) {
 	t.Run("Base ask", func(t *testing.T) {
 		net := network.NewEmptyNetwork(func(net *network.Network[BaseNode], i int) *BaseNode {
-			return NewBaseNode(net)
+			return NewBaseNode(net, 1, 1)
 		}, 2)
 
 		net.Get(0).store["key"] = "value"
@@ -64,7 +64,7 @@ func TestBaseNode_Ask(t *testing.T) {
 
 		net.Get(0).Ask("key", net.Get(1))
 
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * 6)
 
 		val, ok := net.Get(1).store["key"]
 
@@ -75,7 +75,7 @@ func TestBaseNode_Ask(t *testing.T) {
 
 	t.Run("Chain ask", func(t *testing.T) {
 		net := network.NewEmptyNetwork(func(net *network.Network[BaseNode], i int) *BaseNode {
-			return NewBaseNode(net)
+			return NewBaseNode(net, 1, 1)
 		}, 3)
 
 		net.SetPath(0, 1, 1)
@@ -85,7 +85,7 @@ func TestBaseNode_Ask(t *testing.T) {
 
 		net.Get(1).Ask("key", net.Get(0))
 
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond * 11)
 
 		val1, ok1 := net.Get(0).store["key"]
 		val2, ok2 := net.Get(1).store["key"]
