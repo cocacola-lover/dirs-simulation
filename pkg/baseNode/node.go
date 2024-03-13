@@ -23,8 +23,7 @@ func (n *BaseNode) RegisterDownload(key string, val string, with *BaseNode) {
 	n.bandwidthManager.RegisterDownload(
 		len(val),
 		with.bandwidthManager,
-		n.network.GetTunnelWidth(n, with),
-		0,
+		n.network.GetTunnel(n, with),
 		func() {
 			with.Receive(key, val)
 		},

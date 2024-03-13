@@ -1,6 +1,7 @@
 package bandwidthmanager
 
 import (
+	netp "dirs/simulation/pkg/network"
 	"time"
 )
 
@@ -55,7 +56,7 @@ func (t _Task) MsUntilDone() (int, bool) {
 		return max((t.size-t.done)/t.workingSpeed, 0), true
 	} else {
 		timeLeftToReach := time.Duration(t.tunnelLength)*time.Millisecond - time.Since(*t.startedAt)
-		return int(timeLeftToReach) + t.size/t.workingSpeed, true
+		return int(timeLeftToReach.Milliseconds()) + t.size/t.workingSpeed, true
 	}
 
 }
@@ -74,4 +75,8 @@ func (t *_Task) UpdateProgress() {
 		t.done += t.workingSpeed * int(timeSpent.Milliseconds())
 	}
 	t.updatedAt = time.Now()
+}
+
+func NewTask(size int, with *BandwidthManager, tunnel netp.Tunnel, onDone func()) _Task {
+	return _Task{size: size, with: with, tunnelWidth: tunnel.Width, tunnelLength: tunnel.Length, onDone: onDone, updatedAt: time.Now()}
 }

@@ -1,6 +1,7 @@
 package bandwidthmanager
 
 import (
+	netp "dirs/simulation/pkg/network"
 	usp "dirs/simulation/pkg/urgencyScheduler"
 	"dirs/simulation/pkg/utils"
 	"sync"
@@ -48,9 +49,9 @@ func (bm *BandwidthManager) _AddUpload(val int) {
 }
 
 // Use with go
-func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, tunnelWidth int, tunnelLength int, onDone func()) {
+func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, tunnel netp.Tunnel, onDone func()) {
 	utils.WithLockedNoResult(&bm.downloadTasksLock, func() {
-		bm.downloadTasks = append(bm.downloadTasks, _Task{size: size, with: with, tunnelWidth: tunnelWidth, tunnelLength: tunnelLength, onDone: onDone, updatedAt: time.Now()})
+		bm.downloadTasks = append(bm.downloadTasks, NewTask(size, with, tunnel, onDone))
 	})
 
 	bm.scheduler.Schedule(0)

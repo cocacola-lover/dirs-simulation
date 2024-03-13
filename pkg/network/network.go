@@ -3,20 +3,24 @@ package network
 import gp "dirs/simulation/pkg/graph"
 
 type INode interface{}
+type Tunnel struct {
+	Width  int
+	Length int
+}
 
 type Network[Node INode] struct {
-	gp.Graph[int]
+	gp.Graph[Tunnel]
 	nodes     []*Node
 	phoneBook map[*Node]int
 }
 
-func (net Network[Node]) GetTunnelWidth(node1, node2 *Node) int {
-	width, ok := net.HasPath(net.phoneBook[node1], net.phoneBook[node2])
+func (net Network[Node]) GetTunnel(node1, node2 *Node) Tunnel {
+	tunnel, ok := net.HasPath(net.phoneBook[node1], net.phoneBook[node2])
 
 	if ok {
-		return width
+		return tunnel
 	} else {
-		panic("Tried to get TunnelWidth between two nodes that do not have a tunnel")
+		panic("Tried to get Tunnel between two nodes that do not have a tunnel")
 	}
 }
 
@@ -53,7 +57,7 @@ func _NewWithoutGraphNetwork[T INode](initNode func(net *Network[T], i int) *T, 
 func NewEmptyNetwork[T INode](initNode func(net *Network[T], i int) *T, size int) *Network[T] {
 	network := _NewWithoutGraphNetwork[T](initNode, size)
 
-	network.Graph = gp.NewGraph[int](size)
+	network.Graph = gp.NewGraph[Tunnel](size)
 
 	return network
 }
@@ -62,7 +66,9 @@ func NewRandomNetwork[T INode](initNode func(net *Network[T], i int) *T, size in
 
 	network := _NewWithoutGraphNetwork[T](initNode, size)
 
-	network.Graph = gp.NewRandomConnectedGraph[int](size, degree, func() int { return 1 })
+	network.Graph = gp.NewRandomConnectedGraph[Tunnel](size, degree, func() Tunnel {
+		return Tunnel{Width: 1, Length: 1}
+	})
 
 	return network
 }
