@@ -1,7 +1,6 @@
 package basenode
 
 import (
-	"dirs/simulation/pkg/network"
 	netp "dirs/simulation/pkg/network"
 	"testing"
 	"time"
@@ -10,7 +9,7 @@ import (
 func TestBaseNode_Receive(t *testing.T) {
 
 	t.Run("Test single receive", func(t *testing.T) {
-		net := netp.NewEmptyNetwork(func(net *network.Network[BaseNode], i int) *BaseNode {
+		net := netp.NewEmptyNetwork(func(net *netp.Network[BaseNode], i int) *BaseNode {
 			return NewBaseNode(net, 1, 1)
 		}, 1)
 
@@ -20,7 +19,7 @@ func TestBaseNode_Receive(t *testing.T) {
 
 		net.Get(0).Receive("key", "value")
 
-		value, ok := net.Get(0).store["key"]
+		value, ok := net.Get(0).GetFromStore("key")
 
 		if !ok || value != "value" {
 			t.Fatal("Adding to store failed")
@@ -29,7 +28,7 @@ func TestBaseNode_Receive(t *testing.T) {
 
 	t.Run("Test receive and remember to answer", func(t *testing.T) {
 
-		net := netp.NewEmptyNetwork(func(net *network.Network[BaseNode], i int) *BaseNode {
+		net := netp.NewEmptyNetwork(func(net *netp.Network[BaseNode], i int) *BaseNode {
 			return NewBaseNode(net, 1, 1)
 		}, 3)
 
@@ -42,17 +41,9 @@ func TestBaseNode_Receive(t *testing.T) {
 
 		time.Sleep(time.Millisecond * 100)
 
-		net.Get(0).storeLock.Lock()
-		val1, ok1 := net.Get(0).store["key"]
-		net.Get(0).storeLock.Unlock()
-
-		net.Get(1).storeLock.Lock()
-		val2, ok2 := net.Get(1).store["key"]
-		net.Get(1).storeLock.Unlock()
-
-		net.Get(2).storeLock.Lock()
-		val3, ok3 := net.Get(2).store["key"]
-		net.Get(2).storeLock.Unlock()
+		val1, ok1 := net.Get(0).GetFromStore("key")
+		val2, ok2 := net.Get(1).GetFromStore("key")
+		val3, ok3 := net.Get(2).GetFromStore("key")
 
 		if !ok1 || !ok2 || !ok3 || val1 != "value" || val2 != "value" || val3 != "value" {
 			t.Errorf("%v %v %v", ok1, ok2, ok3)
@@ -64,7 +55,7 @@ func TestBaseNode_Receive(t *testing.T) {
 
 func TestBaseNode_Ask(t *testing.T) {
 	t.Run("Base ask", func(t *testing.T) {
-		net := netp.NewEmptyNetwork(func(net *network.Network[BaseNode], i int) *BaseNode {
+		net := netp.NewEmptyNetwork(func(net *netp.Network[BaseNode], i int) *BaseNode {
 			return NewBaseNode(net, 1, 1)
 		}, 2)
 
@@ -76,9 +67,7 @@ func TestBaseNode_Ask(t *testing.T) {
 
 		time.Sleep(time.Millisecond * 100)
 
-		net.Get(1).storeLock.Lock()
-		defer net.Get(1).storeLock.Unlock()
-		val, ok := net.Get(1).store["key"]
+		val, ok := net.Get(1).GetFromStore("key")
 
 		if !ok || val != "value" {
 			t.Fatal("Asking failed")
@@ -86,7 +75,7 @@ func TestBaseNode_Ask(t *testing.T) {
 	})
 
 	t.Run("Chain ask", func(t *testing.T) {
-		net := netp.NewEmptyNetwork(func(net *network.Network[BaseNode], i int) *BaseNode {
+		net := netp.NewEmptyNetwork(func(net *netp.Network[BaseNode], i int) *BaseNode {
 			return NewBaseNode(net, 1, 1)
 		}, 3)
 
@@ -99,12 +88,8 @@ func TestBaseNode_Ask(t *testing.T) {
 
 		time.Sleep(time.Millisecond * 100)
 
-		net.Get(0).storeLock.Lock()
-		defer net.Get(0).storeLock.Unlock()
-		val1, ok1 := net.Get(0).store["key"]
-		net.Get(1).storeLock.Lock()
-		defer net.Get(1).storeLock.Unlock()
-		val2, ok2 := net.Get(1).store["key"]
+		val1, ok1 := net.Get(0).GetFromStore("key")
+		val2, ok2 := net.Get(1).GetFromStore("key")
 
 		if !ok1 || !ok2 || val1 != "value" || val2 != "value" {
 			t.Fatal("Chain ask failed")

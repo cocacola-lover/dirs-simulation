@@ -10,7 +10,7 @@ import (
 type BaseNode struct {
 	// Store holds key-value pairs
 	store     map[string]string
-	storeLock sync.Mutex
+	storeLock sync.RWMutex
 	// Requests holds unaswered yet request
 	requests     []_Request
 	requestsLock sync.Mutex
@@ -19,59 +19,36 @@ type BaseNode struct {
 	network          *netp.Network[BaseNode]
 }
 
-func (n *BaseNode) RegisterDownload(key string, val string, with *BaseNode) {
-	n.bandwidthManager.RegisterDownload(
-		len(val),
-		with.bandwidthManager,
-		n.network.GetTunnel(n, with),
-		func() {
-			with.Receive(key, val)
-		},
-	)
-}
-
 func (n *BaseNode) Receive(key string, val string) {
 
-	utils.WithLockedNoResult(&n.storeLock, func() {
-		n.store[key] = val
-	})
+	n.PutInStore(key, val)
 
-	utils.WithLockedNoResult(&n.requestsLock, func() {
-		n.requests = utils.Filter(n.requests, func(r _Request, i int) bool {
-			if r.key == key {
-				n.RegisterDownload(key, val, r.from)
-				return false
-			}
-			return true
-		})
+	n.requestsLock.Lock()
+	defer n.requestsLock.Unlock()
+
+	n.requests = utils.Filter(n.requests, func(r _Request, i int) bool {
+		if r.key == key {
+			n.RegisterDownload(key, val, r.from)
+			return false
+		}
+		return true
 	})
 }
 
 func (n *BaseNode) Ask(key string, from *BaseNode) {
 
-	n.storeLock.Lock()
-	val, ok := n.store[key]
-	n.storeLock.Unlock()
+	val, ok := n.GetFromStore(key)
 
 	if ok {
 		n.RegisterDownload(key, val, from)
 	} else {
-
 		friends := n.network.GetFriends(n)
 
-		if len(friends) == 0 {
+		if len(friends) < 2 {
 			return
 		}
 
-		if len(friends) == 1 && friends[0] == from {
-			return
-		}
-
-		utils.WithLockedNoResult(&n.requestsLock, func() {
-			n.requests = append(n.requests, _Request{
-				from: from, key: key,
-			})
-		})
+		n.AddRequest(key, from)
 
 		for _, friend := range friends {
 			if friend == from {
