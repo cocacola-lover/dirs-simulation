@@ -1,19 +1,23 @@
 package urgencyscheduler
 
 import (
-	"dirs/simulation/pkg/utils"
-	"sync"
+	"sync/atomic"
 	"time"
 )
 
 // UrgencyScheduler does not work with the last time given
 // but rather with the soonest time given
 type UrgencyScheduler struct {
-	fu             func()
-	activationChan chan int
+	timedFu        func()
+	activationChan chan int32
+	innerTimer     int32
+}
 
-	innerTimer     int
-	innerTimerLock sync.Mutex
+func (s *UrgencyScheduler) InnerTimer() int32 {
+	return atomic.LoadInt32(&s.innerTimer)
+}
+func (s *UrgencyScheduler) AddInnerTime() {
+	atomic.StoreInt32(&s.innerTimer, s.InnerTimer()+1)
 }
 
 func (s *UrgencyScheduler) _Watch() {
@@ -23,21 +27,16 @@ func (s *UrgencyScheduler) _Watch() {
 			return
 		}
 
-		utils.WithLockedNoResult(&s.innerTimerLock, func() {
-			if s.innerTimer == timer {
-				s.innerTimer++
-				go s.fu()
-			}
-		})
+		if s.InnerTimer() == timer {
+			s.AddInnerTime()
+			go s.timedFu()
+		}
 	}
 }
 
 func (s *UrgencyScheduler) Schedule(duration time.Duration) {
 	go (func() {
-		innerTimer := utils.WithLocked(&s.innerTimerLock, func() int {
-			return s.innerTimer
-		})
-
+		innerTimer := s.InnerTimer()
 		time.Sleep(duration)
 		s.activationChan <- innerTimer
 	})()
@@ -47,14 +46,8 @@ func (s *UrgencyScheduler) Close() {
 	close(s.activationChan)
 }
 
-func (s *UrgencyScheduler) InnerTimer() int {
-	return utils.WithLocked(&s.innerTimerLock, func() int {
-		return s.innerTimer
-	})
-}
-
-func NewUrgencyScheduler(fu func()) *UrgencyScheduler {
-	ans := UrgencyScheduler{fu: fu, activationChan: make(chan int)}
+func NewUrgencyScheduler(timedFu func()) *UrgencyScheduler {
+	ans := UrgencyScheduler{timedFu: timedFu, activationChan: make(chan int32)}
 
 	go ans._Watch()
 
