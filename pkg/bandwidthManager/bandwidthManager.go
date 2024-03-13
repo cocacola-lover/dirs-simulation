@@ -5,47 +5,18 @@ import (
 	usp "dirs/simulation/pkg/urgencyScheduler"
 	"dirs/simulation/pkg/utils"
 	"sync"
-	"time"
 )
 
 type BandwidthManager struct {
-	maxUpload   int
-	maxDownload int
-
-	usedUpload     int
-	usedUploadLock sync.Mutex
-
-	usedDownload     int
-	usedDownloadLock sync.Mutex
+	maxUpload    int
+	maxDownload  int
+	usedUpload   int32
+	usedDownload int32
 
 	downloadTasks     []_Task
 	downloadTasksLock sync.Mutex
 
 	scheduler *usp.UrgencyScheduler
-}
-
-func (bm *BandwidthManager) AvailableDownload() int {
-	return utils.WithLocked(&bm.usedDownloadLock, func() int {
-		return bm.maxDownload - bm.usedDownload
-	})
-}
-
-func (bm *BandwidthManager) AvailableUpload() int {
-	return utils.WithLocked(&bm.usedUploadLock, func() int {
-		return bm.maxUpload - bm.usedUpload
-	})
-}
-
-func (bm *BandwidthManager) _AddDownload(val int) {
-	utils.WithLockedNoResult(&bm.usedDownloadLock, func() {
-		bm.usedDownload += val
-	})
-}
-
-func (bm *BandwidthManager) _AddUpload(val int) {
-	utils.WithLockedNoResult(&bm.usedUploadLock, func() {
-		bm.usedUpload += val
-	})
 }
 
 // Use with go
@@ -55,10 +26,6 @@ func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, t
 	})
 
 	bm.scheduler.Schedule(0)
-}
-
-func (bm *BandwidthManager) _ScheduleReevaluation(inMs int) {
-	bm.scheduler.Schedule(time.Millisecond * time.Duration(inMs))
 }
 
 func (bm *BandwidthManager) _Reevaluate() {
