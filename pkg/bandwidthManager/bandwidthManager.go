@@ -48,9 +48,9 @@ func (bm *BandwidthManager) _AddUpload(val int) {
 }
 
 // Use with go
-func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, tunnelWidth int, onDone func()) {
+func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, tunnelWidth int, tunnelLength int, onDone func()) {
 	utils.WithLockedNoResult(&bm.downloadTasksLock, func() {
-		bm.downloadTasks = append(bm.downloadTasks, _Task{size: size, with: with, tunnelWidth: tunnelWidth, onDone: onDone, updatedAt: time.Now()})
+		bm.downloadTasks = append(bm.downloadTasks, _Task{size: size, with: with, tunnelWidth: tunnelWidth, tunnelLength: tunnelLength, onDone: onDone, updatedAt: time.Now()})
 	})
 
 	bm.scheduler.Schedule(0)
@@ -87,8 +87,12 @@ func (bm *BandwidthManager) _Reevaluate() {
 				break
 			}
 
-			if canMake := min(task.workingSpeed+bm.AvailableDownload(), task.with.AvailableUpload(), task.tunnelWidth); canMake > task.workingSpeed {
-				bm.downloadTasks[i].workingSpeed = canMake
+			if canMake := min(
+				task.workingSpeed+bm.AvailableDownload(),
+				task.with.AvailableUpload(),
+				task.tunnelWidth); canMake > task.workingSpeed {
+
+				bm.downloadTasks[i].SetSpeed(canMake)
 
 				bm._AddDownload(canMake - task.workingSpeed)
 				task.with._AddUpload(canMake - task.workingSpeed)
