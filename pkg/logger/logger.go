@@ -1,7 +1,6 @@
 package logger
 
 import (
-	mp "dirs/simulation/pkg/message"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -22,13 +21,13 @@ func (l *Logger[T]) MessagesSent() int {
 	return int(atomic.LoadInt32(&l.messagesSent))
 }
 
-func (l *Logger[T]) AddMessage(m mp.BaseMessage[T], to *T) {
+func (l *Logger[T]) AddMessage(id int, from *T, to *T, reSend int) {
 	atomic.StoreInt32(&l.messagesSent, atomic.LoadInt32(&l.messagesSent)+1)
 
 	l.mtMu.Lock()
 	defer l.mtMu.Unlock()
 
-	l.messageTracks[m.Id] = append(l.messageTracks[m.Id], _Record[T]{from: m.From, to: to, reSend: m.ReSends})
+	l.messageTracks[id] = append(l.messageTracks[id], _Record[T]{from: from, to: to, reSend: reSend})
 }
 
 func (l *Logger[T]) String(phoneBook map[*T]int) string {
@@ -39,8 +38,6 @@ func (l *Logger[T]) String(phoneBook map[*T]int) string {
 
 	l.mtMu.RLock()
 	defer l.mtMu.RUnlock()
-
-	str += fmt.Sprintf("%v\n", l.messageTracks[0])
 
 	for key, arr := range l.messageTracks {
 		str += fmt.Sprintf("Track #%d, total messages - %d :\n", key, len(arr))
