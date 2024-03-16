@@ -1,8 +1,6 @@
 package basenode
 
 import (
-	mp "dirs/simulation/pkg/message"
-	netp "dirs/simulation/pkg/network"
 	"testing"
 	"time"
 )
@@ -10,18 +8,16 @@ import (
 func TestBaseNode_Receive(t *testing.T) {
 
 	t.Run("Test single receive", func(t *testing.T) {
-		net := netp.NewEmptyNetwork(func(net *netp.Network[BaseNode], i int) *BaseNode {
-			return NewBaseNode(net, 1, 1)
-		}, 1)
+		node1 := NewBaseNode(1, 1)
 
-		if len(net.Get(0).store) != 0 {
+		if len(node1.store) != 0 {
 			t.Fatal("Store is not empty on init")
 		}
 
-		net.Get(0).AddRequest(mp.NewBaseMessage("key", net.Get(0)))
-		net.Get(0).Receive(mp.NewBaseMessage("key", net.Get(0)), "value")
+		node1.AddRequest(_NewTestMessage("key", node1))
+		node1.Receive(_NewTestMessage("key", node1), "value")
 
-		value, ok := net.Get(0).GetFromStore("key")
+		value, ok := node1.GetFromStore("key")
 
 		if !ok || value != "value" {
 			t.Fatal("Adding to store failed")
@@ -29,24 +25,30 @@ func TestBaseNode_Receive(t *testing.T) {
 	})
 
 	t.Run("Test receive and remember to answer", func(t *testing.T) {
+		node1, node2, node3 := NewBaseNode(1, 1), NewBaseNode(1, 1), NewBaseNode(1, 1)
 
-		net := netp.NewEmptyNetwork(func(net *netp.Network[BaseNode], i int) *BaseNode {
-			return NewBaseNode(net, 1, 1)
-		}, 3)
+		getTunnel := func(with *BaseNode) (int, int) {
+			return 1, 1
+		}
 
-		net.SetPath(0, 1, netp.Tunnel{Length: 1, Width: 1})
-		net.SetPath(0, 2, netp.Tunnel{Length: 1, Width: 1})
+		node1, node2, node3 = node1.SetGetters(func() []*BaseNode {
+			return []*BaseNode{node2, node3}
+		}, getTunnel), node2.SetGetters(func() []*BaseNode {
+			return []*BaseNode{node1}
+		}, getTunnel), node3.SetGetters(func() []*BaseNode {
+			return []*BaseNode{node1}
+		}, getTunnel)
 
-		net.Get(0).AddRequest(mp.NewBaseMessage("key", net.Get(1)), mp.NewBaseMessage("key", net.Get(2)))
-		net.Get(1).AddRequest(mp.NewBaseMessage("key", net.Get(1)))
-		net.Get(2).AddRequest(mp.NewBaseMessage("key", net.Get(2)))
+		node1.AddRequest(_NewTestMessage("key", node2), _NewTestMessage("key", node3))
+		node2.AddRequest(_NewTestMessage("key", node2))
+		node3.AddRequest(_NewTestMessage("key", node3))
 
-		net.Get(0).Receive(mp.NewBaseMessage("key", net.Get(1)), "value")
+		node1.Receive(_NewTestMessage("key", node2), "value")
 
 		time.Sleep(time.Millisecond * 100)
 
-		val2, ok2 := net.Get(1).GetFromStore("key")
-		val3, ok3 := net.Get(2).GetFromStore("key")
+		val2, ok2 := node2.GetFromStore("key")
+		val3, ok3 := node3.GetFromStore("key")
 
 		if !ok2 || !ok3 || val2 != "value" || val3 != "value" {
 			t.Errorf("%v %v", ok2, ok3)
@@ -58,19 +60,20 @@ func TestBaseNode_Receive(t *testing.T) {
 
 func TestBaseNode_Ask(t *testing.T) {
 	t.Run("Base ask", func(t *testing.T) {
-		net := netp.NewEmptyNetwork(func(net *netp.Network[BaseNode], i int) *BaseNode {
-			return NewBaseNode(net, 1, 1)
-		}, 2)
+		node1, node2 := NewBaseNode(1, 1), NewBaseNode(1, 1)
+		node1, node2 = node1.SetGetters(func() []*BaseNode {
+			return []*BaseNode{node2}
+		}, func(with *BaseNode) (int, int) { return 1, 1 }), node2.SetGetters(func() []*BaseNode {
+			return []*BaseNode{node1}
+		}, func(with *BaseNode) (int, int) { return 1, 1 })
 
-		net.Get(0).store["key"] = "value"
+		node1.store["key"] = "value"
 
-		net.SetPath(0, 1, netp.Tunnel{Length: 1, Width: 1})
-
-		net.Get(1).Ask(mp.NewBaseMessage("key", net.Get(1)))
+		node2.Ask(_NewTestMessage("key", node2))
 
 		time.Sleep(time.Millisecond * 100)
 
-		val, ok := net.Get(1).GetFromStore("key")
+		val, ok := node2.GetFromStore("key")
 
 		if !ok || val != "value" {
 			t.Fatal("Asking failed")
@@ -78,23 +81,54 @@ func TestBaseNode_Ask(t *testing.T) {
 	})
 
 	t.Run("Chain ask", func(t *testing.T) {
-		net := netp.NewEmptyNetwork(func(net *netp.Network[BaseNode], i int) *BaseNode {
-			return NewBaseNode(net, 1, 1)
-		}, 3)
+		node1, node2, node3 := NewBaseNode(1, 1), NewBaseNode(1, 1), NewBaseNode(1, 1)
+		node1, node2, node3 = node1.SetGetters(func() []*BaseNode {
+			return []*BaseNode{node2}
+		}, func(with *BaseNode) (int, int) { return 1, 1 }), node2.SetGetters(func() []*BaseNode {
+			return []*BaseNode{node1, node3}
+		}, func(with *BaseNode) (int, int) { return 1, 1 }), node3.SetGetters(func() []*BaseNode {
+			return []*BaseNode{node2}
+		}, func(with *BaseNode) (int, int) { return 1, 1 })
 
-		net.SetPath(0, 1, netp.Tunnel{Length: 1, Width: 1})
-		net.SetPath(1, 2, netp.Tunnel{Length: 1, Width: 1})
+		node3.store["key"] = "value"
 
-		net.Get(2).store["key"] = "value"
-
-		net.Get(0).Ask(mp.NewBaseMessage("key", net.Get(0)))
+		node1.Ask(_NewTestMessage("key", node1))
 
 		time.Sleep(time.Millisecond * 14)
 
-		val1, ok1 := net.Get(0).GetFromStore("key")
+		val1, ok1 := node1.GetFromStore("key")
 
 		if !ok1 || val1 != "value" {
 			t.Fatal("Chain ask failed")
 		}
 	})
+}
+
+var id int = -1
+
+type _TESTMessage struct {
+	id   int
+	from *BaseNode
+	key  string
+}
+
+func (m _TESTMessage) Id() int {
+	return m.id
+}
+func (m _TESTMessage) From() *BaseNode {
+	return m.from
+}
+func (m _TESTMessage) Key() string {
+	return m.key
+}
+func (m _TESTMessage) IsValid() bool {
+	return true
+}
+func (m _TESTMessage) Resend(from *BaseNode) any {
+	m.from = from
+	return m
+}
+func _NewTestMessage(key string, from *BaseNode) _TESTMessage {
+	id++
+	return _TESTMessage{key: key, from: from, id: id}
 }

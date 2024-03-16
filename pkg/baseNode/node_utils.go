@@ -1,7 +1,5 @@
 package basenode
 
-import mp "dirs/simulation/pkg/message"
-
 func (n *BaseNode) GetFromStore(key string) (string, bool) {
 	n.storeLock.RLock()
 	defer n.storeLock.RUnlock()
@@ -10,26 +8,30 @@ func (n *BaseNode) GetFromStore(key string) (string, bool) {
 	return val, ok
 }
 
-func (n *BaseNode) PutInStore(key string, val string) {
+func (n *BaseNode) PutInStore(m IMessage, val string) {
+	if n.watchPutInStore != nil {
+		go n.watchPutInStore(m, val)
+	}
+
 	n.storeLock.Lock()
 	defer n.storeLock.Unlock()
 
-	n.store[key] = val
+	n.store[m.Key()] = val
 }
 
-func (n *BaseNode) AddRequest(messages ...mp.BaseMessage[BaseNode]) {
+func (n *BaseNode) AddRequest(ms ...IMessage) {
 	n.requestsLock.Lock()
 	defer n.requestsLock.Unlock()
 
-	n.requests = append(n.requests, messages...)
+	n.requests = append(n.requests, ms...)
 }
 
-func (n *BaseNode) HasMessage(message mp.BaseMessage[BaseNode]) bool {
+func (n *BaseNode) HasMessage(m IMessage) bool {
 	n.requestsLock.RLock()
 	defer n.requestsLock.RUnlock()
 
-	for _, m := range n.requests {
-		if m.Id == message.Id {
+	for _, mc := range n.requests {
+		if mc.Id() == m.Id() {
 			return true
 		}
 	}
@@ -37,13 +39,45 @@ func (n *BaseNode) HasMessage(message mp.BaseMessage[BaseNode]) bool {
 	return false
 }
 
-func (n *BaseNode) RegisterDownload(message mp.BaseMessage[BaseNode], val string) {
-	go n.bandwidthManager.RegisterDownload(
-		len(val),
-		message.From.bandwidthManager,
-		n.network.GetTunnel(n, message.From),
-		func() {
-			message.From.Receive(message, val)
-		},
-	)
+func (n *BaseNode) RegisterDownload(m IMessage, val string) {
+
+	if n.watchRegisterDownload != nil {
+		n.watchRegisterDownload(m, val)
+	}
+
+	var tunnelWidth, tunnelLength int
+	if n.getTunnel == nil {
+		tunnelWidth = 1
+		tunnelLength = 0
+	} else {
+		tunnelWidth, tunnelLength = n.getTunnel(m.From())
+	}
+
+	go n.bandwidthManager.RegisterDownload(len(val), m.From().bandwidthManager, tunnelWidth, tunnelLength, func() {
+		m.From().Receive(m, val)
+	})
+}
+
+// Assumes getFriends returns array with unique values +
+// order of friends does not matter.
+func (n *BaseNode) WhoToAsk(m IMessage) []*BaseNode {
+	if n.getFriends == nil {
+		return nil
+	} else {
+		friends := n.getFriends()
+		if len(friends) == 0 || (len(friends) == 1 && friends[0] == m.From()) {
+			return nil
+		}
+
+		for i := 0; i < len(friends); i++ {
+			if friends[i] == m.From() {
+				friends[i] = friends[len(friends)-1]
+				friends = friends[:len(friends)-1]
+				break
+			}
+		}
+
+		return friends
+
+	}
 }
