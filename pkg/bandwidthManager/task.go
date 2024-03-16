@@ -5,13 +5,11 @@ import (
 	"time"
 )
 
-const MaxInt = int(^uint(0) >> 1)
-
 type _Task struct {
 	// The size of file in absolute units
 	size int
 	// The size of dowloaded in absolute units
-	done int
+	done float64
 	// Absolute units / ms
 	workingSpeed int
 	// Max Absolute units / ms
@@ -34,7 +32,7 @@ func (t _Task) HasReachedTheOtherSide() bool {
 }
 
 func (t _Task) IsDone() bool {
-	return t.done >= t.size
+	return t.done >= float64(t.size)
 }
 
 func (t *_Task) SetSpeed(absPerMs int) {
@@ -47,16 +45,18 @@ func (t *_Task) SetSpeed(absPerMs int) {
 }
 
 // Returns not ok, if download speed at zero
-func (t _Task) MsUntilDone() (int, bool) {
+func (t _Task) UntilDone() (time.Duration, bool) {
 	if t.workingSpeed == 0 {
-		return MaxInt, false
+		return time.Hour, false
 	}
-
 	if t.HasReachedTheOtherSide() {
-		return max((t.size-t.done)/t.workingSpeed, 0), true
+		timeLeftToInstall := time.Duration((float64(t.size) - t.done) * float64(time.Millisecond) / float64(t.workingSpeed))
+		return max(timeLeftToInstall, 0), true
 	} else {
 		timeLeftToReach := time.Duration(t.tunnelLength)*time.Millisecond - time.Since(*t.startedAt)
-		return int(timeLeftToReach.Milliseconds()) + t.size/t.workingSpeed, true
+		timeToInstall := time.Duration(float32(t.size*int(time.Millisecond)) / float32(t.workingSpeed))
+
+		return timeLeftToReach + timeToInstall, true
 	}
 
 }
@@ -72,7 +72,7 @@ func (t *_Task) UpdateProgress() {
 		}
 
 		timeSpent := time.Since(countingFrom)
-		t.done += t.workingSpeed * int(timeSpent.Milliseconds())
+		t.done += float64(t.workingSpeed*int(timeSpent)) / float64(time.Millisecond)
 	}
 	t.updatedAt = time.Now()
 }

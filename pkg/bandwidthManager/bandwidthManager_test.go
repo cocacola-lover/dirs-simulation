@@ -15,7 +15,7 @@ func TestBandwidthManager(t *testing.T) {
 		bm2 := NewBandwidthManager(10, 10)
 
 		bm1.RegisterDownload(100, bm2, network.Tunnel{Width: 5, Length: 10}, func() {
-			if time.Since(expectToRun).Abs() > time.Millisecond {
+			if time.Since(expectToRun).Abs() > 2*time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun.Sub(startTime))
 			}
 			if bm1.scheduler.InnerTimer() != 2 {
@@ -54,7 +54,7 @@ func TestBandwidthManager(t *testing.T) {
 		bm2 := NewBandwidthManager(1, 1)
 
 		bm1.RegisterDownload(10, bm2, network.Tunnel{Width: 1, Length: 0}, func() {
-			if time.Since(expectToRun1).Abs() > 5*time.Millisecond {
+			if time.Since(expectToRun1).Abs() > 2*time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun1.Sub(startTime))
 			}
 			if bm1.scheduler.InnerTimer() > 3 {
@@ -63,7 +63,7 @@ func TestBandwidthManager(t *testing.T) {
 		})
 
 		bm1.RegisterDownload(5, bm2, network.Tunnel{Width: 1, Length: 0}, func() {
-			if time.Since(expectToRun2).Abs() > 5*time.Millisecond {
+			if time.Since(expectToRun2).Abs() > 2*time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun2.Sub(startTime))
 			}
 			if bm1.scheduler.InnerTimer() > 4 {
@@ -83,7 +83,7 @@ func TestBandwidthManager(t *testing.T) {
 		bm3 := NewBandwidthManager(10, 10)
 
 		bm1.RegisterDownload(70, bm2, network.Tunnel{Width: 7, Length: 0}, func() {
-			if time.Since(expectToRun1).Abs() > time.Millisecond*5 {
+			if time.Since(expectToRun1).Abs() > time.Millisecond*2 {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime1), expectToRun1.Sub(startTime1))
 			}
 			if bm1.scheduler.InnerTimer() != 3 {
@@ -97,7 +97,7 @@ func TestBandwidthManager(t *testing.T) {
 		expectToRun2 := startTime2.Add(11 * time.Millisecond)
 
 		bm1.RegisterDownload(45, bm3, network.Tunnel{Width: 5, Length: 0}, func() {
-			if time.Since(expectToRun2).Abs() > time.Millisecond*5 {
+			if time.Since(expectToRun2).Abs() > time.Millisecond*2 {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime2), expectToRun2.Sub(startTime2))
 			}
 			if bm1.scheduler.InnerTimer() != 4 {

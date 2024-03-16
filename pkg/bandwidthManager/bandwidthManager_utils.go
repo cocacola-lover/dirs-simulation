@@ -23,6 +23,6 @@ func (bm *BandwidthManager) _AddUpload(val int) {
 	atomic.StoreInt32(&bm.usedUpload, usedUpload+int32(val))
 }
 
-func (bm *BandwidthManager) _ScheduleReevaluation(inMs int) {
-	bm.scheduler.Schedule(time.Millisecond * time.Duration(inMs))
+func (bm *BandwidthManager) _ScheduleReevaluation(dur time.Duration) {
+	bm.scheduler.Schedule(dur)
 }
