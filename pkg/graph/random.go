@@ -1,6 +1,8 @@
 package graph
 
-import "math/rand"
+import (
+	crp "dirs/simulation/pkg/controlledRandom"
+)
 
 // gen() should not return zeroValue
 func NewRandomGraph[T comparable](size int, degree int, gen func() T) Graph[T] {
@@ -14,7 +16,7 @@ func NewRandomGraph[T comparable](size int, degree int, gen func() T) Graph[T] {
 
 	for i := 0; i < size-1; i++ {
 		for j := i + 1; j < size; j++ {
-			if probability >= rand.Float64() {
+			if probability >= crp.Rand.Float64() {
 				g.SetPath(i, j, gen())
 			}
 		}
@@ -31,8 +33,8 @@ func NewRandomConnectedGraph[T comparable](size, degree int, gen func() T) Graph
 
 	if len(cg) > 1 {
 		for i := 0; i < len(cg)-1; i++ {
-			from := cg[i][rand.Intn(len(cg[i]))]
-			to := cg[i+1][rand.Intn(len(cg[i+1]))]
+			from := cg[i][crp.Rand.Intn(len(cg[i]))]
+			to := cg[i+1][crp.Rand.Intn(len(cg[i+1]))]
 			g.SetPath(from, to, gen())
 		}
 	}
