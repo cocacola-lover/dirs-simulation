@@ -1,5 +1,7 @@
 package basenode
 
+import mp "dirs/simulation/pkg/message"
+
 func (n *BaseNode) GetFromStore(key string) (string, bool) {
 	n.storeLock.RLock()
 	defer n.storeLock.RUnlock()
@@ -15,22 +17,33 @@ func (n *BaseNode) PutInStore(key string, val string) {
 	n.store[key] = val
 }
 
-func (n *BaseNode) AddRequest(key string, from *BaseNode) {
+func (n *BaseNode) AddRequest(messages ...mp.BaseMessage[BaseNode]) {
 	n.requestsLock.Lock()
 	defer n.requestsLock.Unlock()
 
-	n.requests = append(n.requests, _Request{
-		from: from, key: key,
-	})
+	n.requests = append(n.requests, messages...)
 }
 
-func (n *BaseNode) RegisterDownload(key string, val string, with *BaseNode) {
-	n.bandwidthManager.RegisterDownload(
+func (n *BaseNode) HasMessage(message mp.BaseMessage[BaseNode]) bool {
+	n.requestsLock.RLock()
+	defer n.requestsLock.RUnlock()
+
+	for _, m := range n.requests {
+		if m.Id == message.Id {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (n *BaseNode) RegisterDownload(message mp.BaseMessage[BaseNode], val string) {
+	go n.bandwidthManager.RegisterDownload(
 		len(val),
-		with.bandwidthManager,
-		n.network.GetTunnel(n, with),
+		message.From.bandwidthManager,
+		n.network.GetTunnel(n, message.From),
 		func() {
-			with.Receive(key, val)
+			message.From.Receive(message, val)
 		},
 	)
 }

@@ -1,6 +1,7 @@
 package basenode
 
 import (
+	mp "dirs/simulation/pkg/message"
 	netp "dirs/simulation/pkg/network"
 	"testing"
 	"time"
@@ -17,7 +18,8 @@ func TestBaseNode_Receive(t *testing.T) {
 			t.Fatal("Store is not empty on init")
 		}
 
-		net.Get(0).Receive("key", "value")
+		net.Get(0).AddRequest(mp.NewBaseMessage("key", net.Get(0)))
+		net.Get(0).Receive(mp.NewBaseMessage("key", net.Get(0)), "value")
 
 		value, ok := net.Get(0).GetFromStore("key")
 
@@ -35,18 +37,19 @@ func TestBaseNode_Receive(t *testing.T) {
 		net.SetPath(0, 1, netp.Tunnel{Length: 1, Width: 1})
 		net.SetPath(0, 2, netp.Tunnel{Length: 1, Width: 1})
 
-		net.Get(0).requests = append(net.Get(0).requests, _Request{key: "key", from: net.Get(1)}, _Request{key: "key", from: net.Get(2)})
+		net.Get(0).AddRequest(mp.NewBaseMessage("key", net.Get(1)), mp.NewBaseMessage("key", net.Get(2)))
+		net.Get(1).AddRequest(mp.NewBaseMessage("key", net.Get(1)))
+		net.Get(2).AddRequest(mp.NewBaseMessage("key", net.Get(2)))
 
-		net.Get(0).Receive("key", "value")
+		net.Get(0).Receive(mp.NewBaseMessage("key", net.Get(1)), "value")
 
 		time.Sleep(time.Millisecond * 100)
 
-		val1, ok1 := net.Get(0).GetFromStore("key")
 		val2, ok2 := net.Get(1).GetFromStore("key")
 		val3, ok3 := net.Get(2).GetFromStore("key")
 
-		if !ok1 || !ok2 || !ok3 || val1 != "value" || val2 != "value" || val3 != "value" {
-			t.Errorf("%v %v %v", ok1, ok2, ok3)
+		if !ok2 || !ok3 || val2 != "value" || val3 != "value" {
+			t.Errorf("%v %v", ok2, ok3)
 			t.Fatal("Receiving failed")
 		}
 	})
@@ -63,7 +66,7 @@ func TestBaseNode_Ask(t *testing.T) {
 
 		net.SetPath(0, 1, netp.Tunnel{Length: 1, Width: 1})
 
-		net.Get(0).Ask("key", net.Get(1))
+		net.Get(1).Ask(mp.NewBaseMessage("key", net.Get(1)))
 
 		time.Sleep(time.Millisecond * 100)
 
@@ -84,14 +87,13 @@ func TestBaseNode_Ask(t *testing.T) {
 
 		net.Get(2).store["key"] = "value"
 
-		net.Get(1).Ask("key", net.Get(0))
+		net.Get(0).Ask(mp.NewBaseMessage("key", net.Get(0)))
 
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 14)
 
 		val1, ok1 := net.Get(0).GetFromStore("key")
-		val2, ok2 := net.Get(1).GetFromStore("key")
 
-		if !ok1 || !ok2 || val1 != "value" || val2 != "value" {
+		if !ok1 || val1 != "value" {
 			t.Fatal("Chain ask failed")
 		}
 	})
