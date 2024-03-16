@@ -1,7 +1,6 @@
 package bandwidthmanager
 
 import (
-	"dirs/simulation/pkg/network"
 	"testing"
 	"time"
 )
@@ -14,7 +13,7 @@ func TestBandwidthManager(t *testing.T) {
 		bm1 := NewBandwidthManager(10, 10)
 		bm2 := NewBandwidthManager(10, 10)
 
-		bm1.RegisterDownload(100, bm2, network.Tunnel{Width: 5, Length: 10}, func() {
+		bm1.RegisterDownload(100, bm2, 5, 10, func() {
 			if time.Since(expectToRun).Abs() > 2*time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun.Sub(startTime))
 			}
@@ -33,7 +32,7 @@ func TestBandwidthManager(t *testing.T) {
 		bm1 := NewBandwidthManager(1, 1)
 		bm2 := NewBandwidthManager(1, 1)
 
-		bm1.RegisterDownload(100, bm2, network.Tunnel{Width: 1, Length: 1}, func() {
+		bm1.RegisterDownload(100, bm2, 1, 1, func() {
 			if time.Since(expectToRun).Abs() > 2*time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun.Sub(startTime))
 			}
@@ -53,7 +52,7 @@ func TestBandwidthManager(t *testing.T) {
 		bm1 := NewBandwidthManager(1, 1)
 		bm2 := NewBandwidthManager(1, 1)
 
-		bm1.RegisterDownload(10, bm2, network.Tunnel{Width: 1, Length: 0}, func() {
+		bm1.RegisterDownload(10, bm2, 1, 0, func() {
 			if time.Since(expectToRun1).Abs() > 2*time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun1.Sub(startTime))
 			}
@@ -62,7 +61,7 @@ func TestBandwidthManager(t *testing.T) {
 			}
 		})
 
-		bm1.RegisterDownload(5, bm2, network.Tunnel{Width: 1, Length: 0}, func() {
+		bm1.RegisterDownload(5, bm2, 1, 0, func() {
 			if time.Since(expectToRun2).Abs() > 2*time.Millisecond {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun2.Sub(startTime))
 			}
@@ -82,7 +81,7 @@ func TestBandwidthManager(t *testing.T) {
 		bm2 := NewBandwidthManager(10, 10)
 		bm3 := NewBandwidthManager(10, 10)
 
-		bm1.RegisterDownload(70, bm2, network.Tunnel{Width: 7, Length: 0}, func() {
+		bm1.RegisterDownload(70, bm2, 7, 0, func() {
 			if time.Since(expectToRun1).Abs() > time.Millisecond*2 {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime1), expectToRun1.Sub(startTime1))
 			}
@@ -96,7 +95,7 @@ func TestBandwidthManager(t *testing.T) {
 		startTime2 := time.Now()
 		expectToRun2 := startTime2.Add(11 * time.Millisecond)
 
-		bm1.RegisterDownload(45, bm3, network.Tunnel{Width: 5, Length: 0}, func() {
+		bm1.RegisterDownload(45, bm3, 5, 0, func() {
 			if time.Since(expectToRun2).Abs() > time.Millisecond*2 {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime2), expectToRun2.Sub(startTime2))
 			}
@@ -115,7 +114,7 @@ func TestBandwidthManager(t *testing.T) {
 		bm1 := NewBandwidthManager(10, 10)
 		bm2 := NewBandwidthManager(10, 10)
 
-		bm1.RegisterDownload(90, bm2, network.Tunnel{Width: 12, Length: 1}, func() {
+		bm1.RegisterDownload(90, bm2, 12, 1, func() {
 			if time.Since(expectToRun1).Abs() > time.Millisecond*5 {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime1), expectToRun1.Sub(startTime1))
 			}
@@ -129,7 +128,7 @@ func TestBandwidthManager(t *testing.T) {
 		startTime2 := time.Now()
 		expectToRun2 := startTime2.Add(9 * time.Millisecond)
 
-		bm2.RegisterDownload(45, bm1, network.Tunnel{Width: 5, Length: 0}, func() {
+		bm2.RegisterDownload(45, bm1, 5, 0, func() {
 			if time.Since(expectToRun2).Abs() > time.Millisecond*5 {
 				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime2), expectToRun2.Sub(startTime2))
 			}
