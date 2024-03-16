@@ -1,6 +1,11 @@
 package network
 
-import gp "dirs/simulation/pkg/graph"
+import (
+	crp "dirs/simulation/pkg/controlledRandom"
+	gp "dirs/simulation/pkg/graph"
+	lp "dirs/simulation/pkg/logger"
+	"fmt"
+)
 
 type INode interface{}
 type Tunnel struct {
@@ -12,6 +17,7 @@ type Network[Node INode] struct {
 	gp.Graph[Tunnel]
 	nodes     []*Node
 	phoneBook map[*Node]int
+	Logger    *lp.Logger[Node]
 }
 
 func (net Network[Node]) GetTunnel(node1, node2 *Node) Tunnel {
@@ -22,6 +28,10 @@ func (net Network[Node]) GetTunnel(node1, node2 *Node) Tunnel {
 	} else {
 		panic("Tried to get Tunnel between two nodes that do not have a tunnel")
 	}
+}
+
+func (net Network[Node]) StringLogger() string {
+	return net.Logger.String(net.phoneBook)
 }
 
 func (net Network[Node]) GetFriends(node *Node) []*Node {
@@ -44,6 +54,7 @@ func _NewWithoutGraphNetwork[T INode](initNode func(net *Network[T], i int) *T, 
 	net := Network[T]{
 		nodes:     make([]*T, size),
 		phoneBook: make(map[*T]int),
+		Logger:    lp.NewLogger[T](),
 	}
 
 	for i := 0; i < size; i++ {
@@ -52,6 +63,12 @@ func _NewWithoutGraphNetwork[T INode](initNode func(net *Network[T], i int) *T, 
 	}
 
 	return &net
+}
+
+func (net Network[Node]) String() string {
+	str := net.Graph.String()
+	str += fmt.Sprintf("%v\n", net.phoneBook)
+	return str
 }
 
 func NewEmptyNetwork[T INode](initNode func(net *Network[T], i int) *T, size int) *Network[T] {
@@ -67,7 +84,7 @@ func NewRandomNetwork[T INode](initNode func(net *Network[T], i int) *T, size in
 	network := _NewWithoutGraphNetwork[T](initNode, size)
 
 	network.Graph = gp.NewRandomConnectedGraph[Tunnel](size, degree, func() Tunnel {
-		return Tunnel{Width: 1, Length: 1}
+		return Tunnel{Width: crp.Rand.Intn(10) + 1, Length: crp.Rand.Intn(10) + 1}
 	})
 
 	return network
