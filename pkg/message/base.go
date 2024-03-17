@@ -33,7 +33,7 @@ func (m BaseMessage) Resends() int {
 	return m.reSends
 }
 
-func (m BaseMessage) Done() {}
+func (m BaseMessage) Done(by fp.INode) {}
 
 func (m BaseMessage) Resend(from fp.INode) fp.IMessage {
 	m.reSends++

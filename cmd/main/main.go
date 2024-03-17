@@ -27,7 +27,7 @@ func main() {
 	search1.WaitForDone()
 	search2.WaitForDone()
 
-	time.Sleep(time.Millisecond)
+	time.Sleep(time.Millisecond * 100)
 
 	fmt.Println(net.StringLogger())
 }

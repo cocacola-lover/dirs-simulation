@@ -4,7 +4,7 @@ type IMessage interface {
 	Id() int
 	From() INode
 	Key() string
-	Done()
+	Done(by INode)
 	Resends() int
 	Resend(from INode) IMessage
 }

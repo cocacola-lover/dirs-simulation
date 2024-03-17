@@ -10,7 +10,7 @@ type FirstMessage struct {
 	closeCh chan bool
 }
 
-func (m FirstMessage) Done() {
+func (m FirstMessage) Done(by fp.INode) {
 	close(m.closeCh)
 }
 

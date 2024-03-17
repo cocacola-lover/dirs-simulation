@@ -7,6 +7,7 @@ type INode interface {
 	Receive(m IMessage, val string)
 	Ask(m IMessage)
 	IsInterestedIn(key string) bool
+	StopSearch(id int, from INode)
 
 	InitStore(store map[string]string)
 }

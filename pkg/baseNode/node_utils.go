@@ -28,7 +28,7 @@ func (n *BaseNode) registerInStore(m fp.IMessage, val string) {
 	n.addToStore(m.Key(), val)
 }
 
-func (n *BaseNode) addRequest(ms ...fp.IMessage) {
+func (n *BaseNode) addRequest(ms ..._Request) {
 	n.requestsLock.Lock()
 	defer n.requestsLock.Unlock()
 

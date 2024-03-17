@@ -12,7 +12,7 @@ type BaseNode struct {
 	store     map[string]string
 	storeLock sync.RWMutex
 	// Requests holds unaswered yet request
-	requests     []fp.IMessage
+	requests     []_Request
 	requestsLock sync.RWMutex
 
 	bandwidthManager *bmp.BandwidthManager
@@ -33,14 +33,15 @@ func (n *BaseNode) Receive(newm fp.IMessage, val string) {
 	n.requestsLock.Lock()
 	defer n.requestsLock.Unlock()
 
-	n.requests = utils.Filter(n.requests, func(m fp.IMessage, i int) bool {
+	n.requests = utils.Filter(n.requests, func(m _Request, i int) bool {
 		if m.Key() == newm.Key() {
 			if m.From() == n {
 				n.registerInStore(m, val)
 			} else if m.From().IsInterestedIn(m.Key()) {
 				n.registerDownload(m, val)
 			}
-			m.Done()
+			m.Done(n)
+
 			return false
 		}
 		return true
@@ -57,7 +58,7 @@ func (n *BaseNode) Ask(m fp.IMessage) {
 
 	if ok {
 		if m.From() != n {
-			m.Done()
+			m.Done(n)
 			n.registerDownload(m, val)
 		}
 	} else {
@@ -66,7 +67,7 @@ func (n *BaseNode) Ask(m fp.IMessage) {
 			return
 		}
 
-		n.addRequest(m)
+		n.addRequest(_NewRequest(m, toAsk))
 
 		for _, friend := range toAsk {
 			go friend.Ask(m.Resend(n))
@@ -85,4 +86,19 @@ func (n *BaseNode) IsInterestedIn(key string) bool {
 	}
 
 	return false
+}
+
+func (n *BaseNode) StopSearch(id int, from fp.INode) {
+
+	n.requestsLock.Lock()
+	defer n.requestsLock.Unlock()
+
+	for i := 0; i < len(n.requests); i++ {
+		if n.requests[i].Id() == id && n.requests[i].From() == from {
+			go n.requests[i].stopSearch(n)
+			n.requests[i] = n.requests[len(n.requests)-1]
+			n.requests = n.requests[:len(n.requests)-1]
+			break
+		}
+	}
 }
