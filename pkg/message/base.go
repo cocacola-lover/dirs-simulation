@@ -7,6 +7,12 @@ import (
 
 var id int32 = 0
 
+func getId() int32 {
+	lid := atomic.LoadInt32(&id)
+	defer atomic.StoreInt32(&id, lid+1)
+	return lid
+}
+
 type BaseMessage struct {
 	id      int32
 	key     string
@@ -27,9 +33,7 @@ func (m BaseMessage) Resends() int {
 	return m.reSends
 }
 
-func (m BaseMessage) IsValid() bool {
-	return m.reSends <= 10
-}
+func (m BaseMessage) Done() {}
 
 func (m BaseMessage) Resend(from fp.INode) fp.IMessage {
 	m.reSends++
@@ -39,9 +43,5 @@ func (m BaseMessage) Resend(from fp.INode) fp.IMessage {
 }
 
 func NewBaseMessage(key string, from fp.INode) BaseMessage {
-
-	lid := atomic.LoadInt32(&id)
-	defer atomic.StoreInt32(&id, lid+1)
-
-	return BaseMessage{id: lid, key: key, reSends: -1, from: from}
+	return BaseMessage{id: getId(), key: key, reSends: -1, from: from}
 }

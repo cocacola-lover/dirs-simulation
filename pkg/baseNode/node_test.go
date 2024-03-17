@@ -146,9 +146,7 @@ func (m _TESTMessage) Resends() int {
 func (m _TESTMessage) Key() string {
 	return m.key
 }
-func (m _TESTMessage) IsValid() bool {
-	return true
-}
+func (m _TESTMessage) Done() {}
 func (m _TESTMessage) Resend(from fp.INode) fp.IMessage {
 	m.from = from
 	return m

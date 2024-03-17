@@ -40,7 +40,7 @@ func (n *BaseNode) Receive(newm fp.IMessage, val string) {
 			} else if m.From().IsInterestedIn(m.Key()) {
 				n.registerDownload(m, val)
 			}
-
+			m.Done()
 			return false
 		}
 		return true
@@ -49,7 +49,7 @@ func (n *BaseNode) Receive(newm fp.IMessage, val string) {
 
 func (n *BaseNode) Ask(m fp.IMessage) {
 
-	if n.hasMessage(m) || !m.IsValid() {
+	if n.hasMessage(m) {
 		return
 	}
 
@@ -57,6 +57,7 @@ func (n *BaseNode) Ask(m fp.IMessage) {
 
 	if ok {
 		if m.From() != n {
+			m.Done()
 			n.registerDownload(m, val)
 		}
 	} else {

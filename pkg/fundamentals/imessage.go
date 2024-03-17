@@ -4,7 +4,7 @@ type IMessage interface {
 	Id() int
 	From() INode
 	Key() string
-	IsValid() bool
+	Done()
 	Resends() int
 	Resend(from INode) IMessage
 }
