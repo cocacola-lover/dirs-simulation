@@ -37,7 +37,7 @@ func (n *BaseNode) Receive(newm fp.IMessage, val string) {
 		if m.Key() == newm.Key() {
 			if m.From() == n {
 				n.registerInStore(m, val)
-			} else {
+			} else if m.From().IsInterestedIn(m.Key()) {
 				n.registerDownload(m, val)
 			}
 
@@ -71,4 +71,17 @@ func (n *BaseNode) Ask(m fp.IMessage) {
 			go friend.Ask(m.Resend(n))
 		}
 	}
+}
+
+func (n *BaseNode) IsInterestedIn(key string) bool {
+	n.requestsLock.RLock()
+	defer n.requestsLock.RUnlock()
+
+	for _, r := range n.requests {
+		if r.Key() == key {
+			return true
+		}
+	}
+
+	return false
 }

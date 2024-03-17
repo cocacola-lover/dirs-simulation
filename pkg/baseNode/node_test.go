@@ -60,13 +60,22 @@ func TestBaseNode_Receive(t *testing.T) {
 }
 
 func TestBaseNode_Ask(t *testing.T) {
+
+	friendsFactory := func(nodes ...fp.INode) func() []fp.INode {
+		return func() []fp.INode {
+			return nodes
+		}
+	}
+	tunnelFactory := func() func(with fp.INode) (int, int) {
+		return func(with fp.INode) (int, int) {
+			return 1, 1
+		}
+	}
+
 	t.Run("Base ask", func(t *testing.T) {
 		node1, node2 := NewBaseNode(1, 1), NewBaseNode(1, 1)
-		node1, node2 = node1.SetGetters(func() []fp.INode {
-			return []fp.INode{node2}
-		}, func(with fp.INode) (int, int) { return 1, 1 }), node2.SetGetters(func() []fp.INode {
-			return []fp.INode{node1}
-		}, func(with fp.INode) (int, int) { return 1, 1 })
+		node1 = node1.SetGetters(friendsFactory(node2), tunnelFactory())
+		node2 = node2.SetGetters(friendsFactory(node1), tunnelFactory())
 
 		node1.store["key"] = "value"
 
@@ -83,13 +92,10 @@ func TestBaseNode_Ask(t *testing.T) {
 
 	t.Run("Chain ask", func(t *testing.T) {
 		node1, node2, node3 := NewBaseNode(1, 1), NewBaseNode(1, 1), NewBaseNode(1, 1)
-		node1, node2, node3 = node1.SetGetters(func() []fp.INode {
-			return []fp.INode{node2}
-		}, func(with fp.INode) (int, int) { return 1, 1 }), node2.SetGetters(func() []fp.INode {
-			return []fp.INode{node1, node3}
-		}, func(with fp.INode) (int, int) { return 1, 1 }), node3.SetGetters(func() []fp.INode {
-			return []fp.INode{node2}
-		}, func(with fp.INode) (int, int) { return 1, 1 })
+
+		node1 = node1.SetGetters(friendsFactory(node2), tunnelFactory())
+		node2 = node2.SetGetters(friendsFactory(node1, node3), tunnelFactory())
+		node3 = node3.SetGetters(friendsFactory(node2), tunnelFactory())
 
 		node3.store["key"] = "value"
 
@@ -102,6 +108,21 @@ func TestBaseNode_Ask(t *testing.T) {
 		if !ok1 || val1 != "value" {
 			t.Fatal("Chain ask failed")
 		}
+	})
+
+	t.Run("Reject if uninterested", func(t *testing.T) {
+		node1, node2 := NewBaseNode(1, 1), NewBaseNode(1, 1)
+
+		node1 = node1.SetGetters(friendsFactory(node2), tunnelFactory()).SetWatchers(nil, func(m fp.IMessage, me fp.INode) {
+			t.Fatal("Did not reject")
+		})
+		node2 = node2.SetGetters(friendsFactory(node1), tunnelFactory())
+
+		node1.addRequest(_NewTestMessage("key", node2))
+		// node2.addRequest(_NewTestMessage("key", node2))
+		node1.Receive(_NewTestMessage("key", node2), "value")
+
+		time.Sleep(20 * time.Millisecond)
 	})
 }
 
