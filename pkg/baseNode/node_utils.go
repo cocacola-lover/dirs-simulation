@@ -1,6 +1,11 @@
 package basenode
 
-func (n *BaseNode) GetFromStore(key string) (string, bool) {
+import (
+	bmp "dirs/simulation/pkg/bandwidthManager"
+	fp "dirs/simulation/pkg/fundamentals"
+)
+
+func (n *BaseNode) getFromStore(key string) (string, bool) {
 	n.storeLock.RLock()
 	defer n.storeLock.RUnlock()
 
@@ -8,25 +13,29 @@ func (n *BaseNode) GetFromStore(key string) (string, bool) {
 	return val, ok
 }
 
-func (n *BaseNode) PutInStore(m IMessage, val string) {
-	if n.watchPutInStore != nil {
-		go n.watchPutInStore(m, val)
-	}
-
+func (n *BaseNode) addToStore(key, val string) {
 	n.storeLock.Lock()
 	defer n.storeLock.Unlock()
 
-	n.store[m.Key()] = val
+	n.store[key] = val
 }
 
-func (n *BaseNode) AddRequest(ms ...IMessage) {
+func (n *BaseNode) registerInStore(m fp.IMessage, val string) {
+	if n.watchPutInStore != nil {
+		go n.watchPutInStore(m, n)
+	}
+
+	n.addToStore(m.Key(), val)
+}
+
+func (n *BaseNode) addRequest(ms ...fp.IMessage) {
 	n.requestsLock.Lock()
 	defer n.requestsLock.Unlock()
 
 	n.requests = append(n.requests, ms...)
 }
 
-func (n *BaseNode) HasMessage(m IMessage) bool {
+func (n *BaseNode) hasMessage(m fp.IMessage) bool {
 	n.requestsLock.RLock()
 	defer n.requestsLock.RUnlock()
 
@@ -39,10 +48,10 @@ func (n *BaseNode) HasMessage(m IMessage) bool {
 	return false
 }
 
-func (n *BaseNode) RegisterDownload(m IMessage, val string) {
+func (n *BaseNode) registerDownload(m fp.IMessage, val string) {
 
 	if n.watchRegisterDownload != nil {
-		n.watchRegisterDownload(m, val)
+		n.watchRegisterDownload(m, n)
 	}
 
 	var tunnelWidth, tunnelLength int
@@ -53,14 +62,14 @@ func (n *BaseNode) RegisterDownload(m IMessage, val string) {
 		tunnelWidth, tunnelLength = n.getTunnel(m.From())
 	}
 
-	go n.bandwidthManager.RegisterDownload(len(val), m.From().bandwidthManager, tunnelWidth, tunnelLength, func() {
+	go n.bandwidthManager.RegisterDownload(len(val), m.From().BandwidthManager(), tunnelWidth, tunnelLength, func() {
 		m.From().Receive(m, val)
 	})
 }
 
 // Assumes getFriends returns array with unique values +
 // order of friends does not matter.
-func (n *BaseNode) WhoToAsk(m IMessage) []*BaseNode {
+func (n *BaseNode) whoToAsk(m fp.IMessage) []fp.INode {
 	if n.getFriends == nil {
 		return nil
 	} else {
@@ -80,4 +89,8 @@ func (n *BaseNode) WhoToAsk(m IMessage) []*BaseNode {
 		return friends
 
 	}
+}
+
+func (n *BaseNode) BandwidthManager() *bmp.BandwidthManager {
+	return n.bandwidthManager
 }

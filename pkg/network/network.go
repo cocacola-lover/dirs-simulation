@@ -1,26 +1,24 @@
 package network
 
 import (
-	crp "dirs/simulation/pkg/controlledRandom"
+	fp "dirs/simulation/pkg/fundamentals"
 	gp "dirs/simulation/pkg/graph"
 	lp "dirs/simulation/pkg/logger"
-	"fmt"
 )
 
-type INode interface{}
 type Tunnel struct {
 	Width  int
 	Length int
 }
 
-type Network[Node INode] struct {
+type Network struct {
 	gp.Graph[Tunnel]
-	nodes     []*Node
-	phoneBook map[*Node]int
-	Logger    *lp.Logger[Node]
+	nodes     []fp.INode
+	phoneBook map[fp.INode]int
+	Logger    *lp.Logger
 }
 
-func (net Network[Node]) GetTunnel(node1, node2 *Node) Tunnel {
+func (net Network) GetTunnel(node1, node2 fp.INode) Tunnel {
 	tunnel, ok := net.HasPath(net.phoneBook[node1], net.phoneBook[node2])
 
 	if ok {
@@ -30,12 +28,12 @@ func (net Network[Node]) GetTunnel(node1, node2 *Node) Tunnel {
 	}
 }
 
-func (net Network[Node]) StringLogger() string {
+func (net Network) StringLogger() string {
 	return net.Logger.String(net.phoneBook)
 }
 
-func (net Network[Node]) GetFriends(node *Node) []*Node {
-	ans := []*Node{}
+func (net Network) GetFriends(node fp.INode) []fp.INode {
+	ans := []fp.INode{}
 
 	indsOfFriends, _ := net.GetPaths(net.phoneBook[node])
 
@@ -46,46 +44,11 @@ func (net Network[Node]) GetFriends(node *Node) []*Node {
 	return ans
 }
 
-func (net Network[Node]) Get(i int) *Node {
+func (net Network) Get(i int) fp.INode {
 	return net.nodes[i]
 }
 
-func _NewWithoutGraphNetwork[T INode](initNode func(net *Network[T], i int) *T, size int) *Network[T] {
-	net := Network[T]{
-		nodes:     make([]*T, size),
-		phoneBook: make(map[*T]int),
-		Logger:    lp.NewLogger[T](),
-	}
-
-	for i := 0; i < size; i++ {
-		net.nodes[i] = initNode(&net, i)
-		net.phoneBook[net.nodes[i]] = i
-	}
-
-	return &net
-}
-
-func (net Network[Node]) String() string {
+func (net Network) String() string {
 	str := net.Graph.String()
-	str += fmt.Sprintf("%v\n", net.phoneBook)
 	return str
-}
-
-func NewEmptyNetwork[T INode](initNode func(net *Network[T], i int) *T, size int) *Network[T] {
-	network := _NewWithoutGraphNetwork[T](initNode, size)
-
-	network.Graph = gp.NewGraph[Tunnel](size)
-
-	return network
-}
-
-func NewRandomNetwork[T INode](initNode func(net *Network[T], i int) *T, size int, degree int) *Network[T] {
-
-	network := _NewWithoutGraphNetwork[T](initNode, size)
-
-	network.Graph = gp.NewRandomConnectedGraph[Tunnel](size, degree, func() Tunnel {
-		return Tunnel{Width: crp.Rand.Intn(10) + 1, Length: crp.Rand.Intn(10) + 1}
-	})
-
-	return network
 }

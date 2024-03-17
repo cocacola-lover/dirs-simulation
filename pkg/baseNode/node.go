@@ -2,6 +2,7 @@ package basenode
 
 import (
 	bmp "dirs/simulation/pkg/bandwidthManager"
+	fp "dirs/simulation/pkg/fundamentals"
 	"dirs/simulation/pkg/utils"
 	"sync"
 )
@@ -11,33 +12,33 @@ type BaseNode struct {
 	store     map[string]string
 	storeLock sync.RWMutex
 	// Requests holds unaswered yet request
-	requests     []IMessage
+	requests     []fp.IMessage
 	requestsLock sync.RWMutex
 
 	bandwidthManager *bmp.BandwidthManager
 
 	// OuterGetterFunctions
 
-	getFriends func() []*BaseNode
-	getTunnel  func(with *BaseNode) (int, int)
+	getFriends func() []fp.INode
+	getTunnel  func(with fp.INode) (int, int)
 
 	// Watchers
 
-	watchPutInStore       func(m IMessage, val string)
-	watchRegisterDownload func(m IMessage, val string)
+	watchPutInStore       func(m fp.IMessage, me fp.INode)
+	watchRegisterDownload func(m fp.IMessage, me fp.INode)
 }
 
-func (n *BaseNode) Receive(newm IMessage, val string) {
+func (n *BaseNode) Receive(newm fp.IMessage, val string) {
 
 	n.requestsLock.Lock()
 	defer n.requestsLock.Unlock()
 
-	n.requests = utils.Filter(n.requests, func(m IMessage, i int) bool {
+	n.requests = utils.Filter(n.requests, func(m fp.IMessage, i int) bool {
 		if m.Key() == newm.Key() {
 			if m.From() == n {
-				n.PutInStore(m, val)
+				n.registerInStore(m, val)
 			} else {
-				n.RegisterDownload(m, val)
+				n.registerDownload(m, val)
 			}
 
 			return false
@@ -46,28 +47,28 @@ func (n *BaseNode) Receive(newm IMessage, val string) {
 	})
 }
 
-func (n *BaseNode) Ask(m IMessage) {
+func (n *BaseNode) Ask(m fp.IMessage) {
 
-	if n.HasMessage(m) || !m.IsValid() {
+	if n.hasMessage(m) || !m.IsValid() {
 		return
 	}
 
-	val, ok := n.GetFromStore(m.Key())
+	val, ok := n.getFromStore(m.Key())
 
 	if ok {
 		if m.From() != n {
-			n.RegisterDownload(m, val)
+			n.registerDownload(m, val)
 		}
 	} else {
-		toAsk := n.WhoToAsk(m)
+		toAsk := n.whoToAsk(m)
 		if len(toAsk) == 0 {
 			return
 		}
 
-		n.AddRequest(m)
+		n.addRequest(m)
 
 		for _, friend := range toAsk {
-			go friend.Ask(Resend(m, n))
+			go friend.Ask(m.Resend(n))
 		}
 	}
 }

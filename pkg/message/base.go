@@ -1,37 +1,47 @@
 package message
 
 import (
-	"sync"
+	fp "dirs/simulation/pkg/fundamentals"
+	"sync/atomic"
 )
 
-var id int = -1
-var mu sync.Mutex
+var id int32 = 0
 
-type BaseMessage[T any] struct {
-	Id      int
-	Key     string
-	ReSends int
-	From    *T
+type BaseMessage struct {
+	id      int32
+	key     string
+	reSends int
+	from    fp.INode
 }
 
-func (m BaseMessage[T]) IsValid() bool {
-	return m.ReSends <= 10
+func (m BaseMessage) Id() int {
+	return int(m.id)
+}
+func (m BaseMessage) Key() string {
+	return m.key
+}
+func (m BaseMessage) From() fp.INode {
+	return m.from
+}
+func (m BaseMessage) Resends() int {
+	return m.reSends
 }
 
-func (m BaseMessage[T]) Resend(from *T) BaseMessage[T] {
-	m.ReSends++
-	m.From = from
+func (m BaseMessage) IsValid() bool {
+	return m.reSends <= 10
+}
+
+func (m BaseMessage) Resend(from fp.INode) fp.IMessage {
+	m.reSends++
+	m.from = from
 
 	return m
 }
 
-func NewBaseMessage[T any](key string, from *T) BaseMessage[T] {
-	mu.Lock()
-	defer mu.Unlock()
+func NewBaseMessage(key string, from fp.INode) BaseMessage {
 
-	id++
+	lid := atomic.LoadInt32(&id)
+	defer atomic.StoreInt32(&id, lid+1)
 
-	ans := BaseMessage[T]{Id: id, Key: key, ReSends: -1, From: from}
-
-	return ans
+	return BaseMessage{id: lid, key: key, reSends: -1, from: from}
 }
