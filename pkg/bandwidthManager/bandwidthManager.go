@@ -19,12 +19,28 @@ type BandwidthManager struct {
 }
 
 // Use with go
-func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, tunnelWidth int, tunnelLength int, onDone func()) {
-	utils.WithLockedNoResult(&bm.downloadTasksLock, func() {
-		bm.downloadTasks = append(bm.downloadTasks, NewTask(size, with, tunnelWidth, tunnelLength, onDone))
+func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, tunnelWidth int, tunnelLength int, onDone func(id int)) int {
+	newTask := NewTask(size, with, tunnelWidth, tunnelLength, onDone)
+
+	go utils.WithLockedNoResult(&bm.downloadTasksLock, func() {
+		bm.downloadTasks = append(bm.downloadTasks, newTask)
+		bm.scheduler.Schedule(0)
 	})
 
-	bm.scheduler.Schedule(0)
+	return int(newTask.id)
+}
+
+func (bm *BandwidthManager) DropDownload(id int) {
+	go utils.WithLockedNoResult(&bm.downloadTasksLock, func() {
+		for i := 0; i < len(bm.downloadTasks); i++ {
+			if bm.downloadTasks[i].id == int64(id) {
+				bm.downloadTasks[i] = bm.downloadTasks[len(bm.downloadTasks)-1]
+				bm.downloadTasks = bm.downloadTasks[:len(bm.downloadTasks)-1]
+				return
+			}
+		}
+		bm.scheduler.Schedule(0)
+	})
 }
 
 func (bm *BandwidthManager) _Reevaluate() {
@@ -41,7 +57,7 @@ func (bm *BandwidthManager) _Reevaluate() {
 				bm._AddDownload(-task.workingSpeed)
 				task.with._AddUpload(-task.workingSpeed)
 
-				go task.onDone()
+				go task.onDone(int(task.id))
 				return false
 			}
 

@@ -1,10 +1,14 @@
 package bandwidthmanager
 
 import (
+	"sync/atomic"
 	"time"
 )
 
+var id int64 = 0
+
 type _Task struct {
+	id int64
 	// The size of file in absolute units
 	size int
 	// The size of dowloaded in absolute units
@@ -19,7 +23,7 @@ type _Task struct {
 
 	with      *BandwidthManager
 	updatedAt time.Time
-	onDone    func()
+	onDone    func(id int)
 }
 
 func (t _Task) HasReachedTheOtherSide() bool {
@@ -76,6 +80,9 @@ func (t *_Task) UpdateProgress() {
 	t.updatedAt = time.Now()
 }
 
-func NewTask(size int, with *BandwidthManager, tunnelWidth int, tunnelLength int, onDone func()) _Task {
-	return _Task{size: size, with: with, tunnelWidth: tunnelWidth, tunnelLength: tunnelLength, onDone: onDone, updatedAt: time.Now()}
+func NewTask(size int, with *BandwidthManager, tunnelWidth int, tunnelLength int, onDone func(id int)) _Task {
+	lid := atomic.LoadInt64(&id)
+	defer atomic.StoreInt64(&id, lid+1)
+
+	return _Task{id: lid, size: size, with: with, tunnelWidth: tunnelWidth, tunnelLength: tunnelLength, onDone: onDone, updatedAt: time.Now()}
 }
