@@ -66,8 +66,12 @@ func (bm *BandwidthManager) _Reevaluate() {
 
 		// Adjust speeds
 		for i, task := range bm.downloadTasks {
+			if task.size == 0 {
+				bm.downloadTasks[i].SetSpeed(0)
+				continue
+			}
 			if bm.AvailableDownload() == 0 {
-				break
+				continue
 			}
 
 			if canMake := min(

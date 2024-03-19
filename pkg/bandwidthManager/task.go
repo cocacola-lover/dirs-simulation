@@ -35,6 +35,12 @@ func (t _Task) HasReachedTheOtherSide() bool {
 }
 
 func (t _Task) IsDone() bool {
+	if t.startedAt == nil {
+		return false
+	}
+	if time.Since(*t.startedAt).Milliseconds() <= int64(t.tunnelLength) {
+		return false
+	}
 	return t.done >= float64(t.size)
 }
 

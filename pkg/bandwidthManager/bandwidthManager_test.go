@@ -25,6 +25,44 @@ func TestBandwidthManager(t *testing.T) {
 		time.Sleep(30 * time.Millisecond)
 	})
 
+	t.Run("Simple test, 0 size", func(t *testing.T) {
+		startTime := time.Now()
+		expectToRun := startTime.Add(10 * time.Millisecond)
+
+		bm1 := NewBandwidthManager(10, 10)
+		bm2 := NewBandwidthManager(10, 10)
+
+		bm1.RegisterDownload(0, bm2, 5, 10, func(_ int) {
+			if time.Since(expectToRun).Abs() > 2*time.Millisecond {
+				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun.Sub(startTime))
+			}
+			if bm1.scheduler.InnerTimer() != 2 {
+				t.Errorf("Upload took %v reevaluations, but was expected to take %v", bm1.scheduler.InnerTimer(), 2)
+			}
+		})
+
+		time.Sleep(15 * time.Millisecond)
+	})
+
+	t.Run("Simple test, 0 tunnel length", func(t *testing.T) {
+		startTime := time.Now()
+		expectToRun := startTime.Add(2 * time.Millisecond)
+
+		bm1 := NewBandwidthManager(10, 10)
+		bm2 := NewBandwidthManager(10, 10)
+
+		bm1.RegisterDownload(10, bm2, 5, 0, func(_ int) {
+			if time.Since(expectToRun).Abs() > 2*time.Millisecond {
+				t.Errorf("Upload took %v, but was expected to take %v", time.Since(startTime), expectToRun.Sub(startTime))
+			}
+			if bm1.scheduler.InnerTimer() != 2 {
+				t.Errorf("Upload took %v reevaluations, but was expected to take %v", bm1.scheduler.InnerTimer(), 2)
+			}
+		})
+
+		time.Sleep(10 * time.Millisecond)
+	})
+
 	t.Run("Simple test, 1 speed", func(t *testing.T) {
 		startTime := time.Now()
 		expectToRun := startTime.Add(101 * time.Millisecond)
