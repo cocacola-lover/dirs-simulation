@@ -24,7 +24,7 @@ type Node struct {
 	// OuterGetterFunctions^
 }
 
-func (n *Node) ReceiveRouteMessage(id int, key string, from INode) {
+func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
 
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
@@ -33,7 +33,7 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from INode) {
 	defer n.routeRequestsLock.Unlock()
 
 	if n.isInRequests(id) || n.isInDoneMessages(id) {
-		return
+		return false
 	}
 
 	_, ok := n.hasKey(key)
@@ -48,9 +48,10 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from INode) {
 
 		n.addRequest(r)
 	}
+	return true
 }
 
-func (n *Node) ConfirmRouteMessage(id int, from INode) {
+func (n *Node) ConfirmRouteMessage(id int, from INode) bool {
 
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
@@ -59,7 +60,7 @@ func (n *Node) ConfirmRouteMessage(id int, from INode) {
 	defer n.routeRequestsLock.Unlock()
 
 	if n.isInDoneMessages(id) || n.isInConfirmedRequests(id) {
-		return
+		return false
 	}
 
 	r := n.setRouteForRequest(id, from)
@@ -75,9 +76,10 @@ func (n *Node) ConfirmRouteMessage(id int, from INode) {
 			go nn.TimeoutRouteMessage(id, n)
 		}
 	}
+	return true
 }
 
-func (n *Node) TimeoutRouteMessage(id int, from INode) {
+func (n *Node) TimeoutRouteMessage(id int, from INode) bool {
 
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
@@ -86,7 +88,7 @@ func (n *Node) TimeoutRouteMessage(id int, from INode) {
 	defer n.routeRequestsLock.Unlock()
 
 	if n.isInDoneMessages(id) {
-		return
+		return false
 	}
 
 	n.doneMessagesLock.Lock()
@@ -95,7 +97,7 @@ func (n *Node) TimeoutRouteMessage(id int, from INode) {
 	r, ok := n.findRequest(id)
 
 	if !ok || r.from != from {
-		return
+		return false
 	} else {
 		n.doneMessages[id] = true
 		n.removeRequest(id)
@@ -104,6 +106,8 @@ func (n *Node) TimeoutRouteMessage(id int, from INode) {
 			go nn.TimeoutRouteMessage(id, n)
 		}
 	}
+
+	return true
 }
 
 func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {

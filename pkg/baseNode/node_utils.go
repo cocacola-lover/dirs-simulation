@@ -62,7 +62,7 @@ func (n *BaseNode) registerDownload(m fp.IMessage, val string) {
 		tunnelWidth, tunnelLength = n.getTunnel(m.From())
 	}
 
-	go n.bandwidthManager.RegisterDownload(len(val), m.From().BandwidthManager(), tunnelWidth, tunnelLength, func() {
+	go n.bandwidthManager.RegisterDownload(len(val), m.From().BandwidthManager(), tunnelWidth, tunnelLength, func(id int) {
 		m.From().Receive(m, val)
 	})
 }
