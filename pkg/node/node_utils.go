@@ -16,7 +16,7 @@ func (n *Node) putVal(key, val string) {
 }
 
 // Returns an array of friends to which did "do"
-func (n *Node) forEachFriendExcept(do func(f *Node), except *Node) []*Node {
+func (n *Node) forEachFriendExcept(do func(f INode), except INode) []INode {
 	if n.getNetworkFriends == nil {
 		return nil
 	}
@@ -35,7 +35,7 @@ func (n *Node) forEachFriendExcept(do func(f *Node), except *Node) []*Node {
 }
 
 // TunnelWidth and TunnelLength
-func (n *Node) getTunnel(to *Node) (int, int) {
+func (n *Node) getTunnel(to INode) (int, int) {
 	var tunnelWidth, tunnelLength int
 	if n.getNetworkTunnel == nil {
 		tunnelWidth = 1
@@ -75,7 +75,7 @@ func (n *Node) requestCameFromMe(id int) bool {
 	return r.from == n
 }
 
-func (n *Node) setRouteForRequest(id int, to *Node) _RouteRequest {
+func (n *Node) setRouteForRequest(id int, to INode) _RouteRequest {
 	for i := 0; i < len(n.routeRequests); i++ {
 		if id == n.routeRequests[i].id {
 			n.routeRequests[i].routedTo = to

@@ -5,19 +5,19 @@ import (
 	"time"
 )
 
-var friendsFactory = func(nodes ...*Node) func() []*Node {
-	return func() []*Node {
+var friendsFactory = func(nodes ...INode) func() []INode {
+	return func() []INode {
 		return nodes
 	}
 }
 
-var tunnelFactory = func() func(with *Node) (int, int) {
-	return func(with *Node) (int, int) {
+var tunnelFactory = func() func(with INode) (int, int) {
+	return func(with INode) (int, int) {
 		return 1, 1
 	}
 }
 
-var newRouteRequest = func(id int, key string, from *Node, routedTo *Node, sentTo []*Node) _RouteRequest {
+var newRouteRequest = func(id int, key string, from INode, routedTo INode, sentTo []INode) _RouteRequest {
 	return _RouteRequest{id: id, key: key, from: from, routedTo: routedTo, sentTo: sentTo}
 }
 
@@ -192,10 +192,10 @@ func TestNode_TimeoutRouteMessage(t *testing.T) {
 
 		node4.putVal("key", "value")
 
-		node1.addRequest(newRouteRequest(0, "key", node1, node2, []*Node{node2}))
-		node2.addRequest(newRouteRequest(0, "key", node1, node3, []*Node{node3}))
-		node3.addRequest(newRouteRequest(0, "key", node2, node4, []*Node{node4}))
-		node4.addRequest(newRouteRequest(0, "key", node3, node5, []*Node{node5}))
+		node1.addRequest(newRouteRequest(0, "key", node1, node2, []INode{node2}))
+		node2.addRequest(newRouteRequest(0, "key", node1, node3, []INode{node3}))
+		node3.addRequest(newRouteRequest(0, "key", node2, node4, []INode{node4}))
+		node4.addRequest(newRouteRequest(0, "key", node3, node5, []INode{node5}))
 
 		node2.TimeoutRouteMessage(0, node1)
 
@@ -259,9 +259,9 @@ func TestNode_ConfirmRouteMessage(t *testing.T) {
 
 		node4.putVal("key", "value")
 
-		node1.addRequest(newRouteRequest(0, "key", node1, nil, []*Node{node2}))
-		node2.addRequest(newRouteRequest(0, "key", node1, nil, []*Node{node3}))
-		node3.addRequest(newRouteRequest(0, "key", node2, nil, []*Node{node4}))
+		node1.addRequest(newRouteRequest(0, "key", node1, nil, []INode{node2}))
+		node2.addRequest(newRouteRequest(0, "key", node1, nil, []INode{node3}))
+		node3.addRequest(newRouteRequest(0, "key", node2, nil, []INode{node4}))
 
 		node3.ConfirmRouteMessage(0, node4)
 

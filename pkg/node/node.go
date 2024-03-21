@@ -19,12 +19,12 @@ type Node struct {
 
 	bm *bmp.BandwidthManager
 
-	getNetworkFriends func() []*Node
-	getNetworkTunnel  func(with *Node) (int, int)
+	getNetworkFriends func() []INode
+	getNetworkTunnel  func(with INode) (int, int)
 	// OuterGetterFunctions^
 }
 
-func (n *Node) ReceiveRouteMessage(id int, key string, from *Node) {
+func (n *Node) ReceiveRouteMessage(id int, key string, from INode) {
 
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
@@ -42,7 +42,7 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from *Node) {
 		go from.ConfirmRouteMessage(id, n)
 	} else {
 		r := _NewRouteRequest(id, key, from)
-		r.sentTo = n.forEachFriendExcept(func(f *Node) {
+		r.sentTo = n.forEachFriendExcept(func(f INode) {
 			go f.ReceiveRouteMessage(id, key, n)
 		}, from)
 
@@ -50,7 +50,7 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from *Node) {
 	}
 }
 
-func (n *Node) ConfirmRouteMessage(id int, from *Node) {
+func (n *Node) ConfirmRouteMessage(id int, from INode) {
 
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
@@ -77,7 +77,7 @@ func (n *Node) ConfirmRouteMessage(id int, from *Node) {
 	}
 }
 
-func (n *Node) TimeoutRouteMessage(id int, from *Node) {
+func (n *Node) TimeoutRouteMessage(id int, from INode) {
 
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
@@ -106,7 +106,7 @@ func (n *Node) TimeoutRouteMessage(id int, from *Node) {
 	}
 }
 
-func (n *Node) ReceiveDownloadMessage(id int, key string, from *Node) {
+func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
 
@@ -123,9 +123,9 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from *Node) {
 	}
 }
 
-func (n *Node) ConfirmDownloadMessage(id int, val string, from *Node) {
+func (n *Node) ConfirmDownloadMessage(id int, val string, from INode) {
 	tunnelWidth, tunnelLength := n.getTunnel(from)
-	n.bm.RegisterDownload(len(val), from.bm, tunnelWidth, tunnelLength, func(_ int) {
+	n.bm.RegisterDownload(len(val), from.Bm(), tunnelWidth, tunnelLength, func(_ int) {
 		n.doneMessagesLock.Lock()
 		n.doneMessages[id] = true
 		n.doneMessagesLock.Unlock()
@@ -143,7 +143,11 @@ func (n *Node) ConfirmDownloadMessage(id int, val string, from *Node) {
 	})
 }
 
-func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []*Node, getNetworkTunnel func(with *Node) (int, int)) *Node {
+func (n *Node) Bm() *bmp.BandwidthManager {
+	return n.bm
+}
+
+func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
 	return &Node{
 		bm:                bmp.NewBandwidthManager(maxDownload, maxUpload),
 		store:             make(map[string]string),
