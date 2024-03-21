@@ -1,44 +1,42 @@
 package nlogger
 
-import "dirs/simulation/pkg/node"
+import (
+	"dirs/simulation/pkg/node"
+	"sync"
+)
 
-func (l *Logger) AddRouteMessageReceive(id int, from node.INode, to node.INode) {
-	l.rmrLock.Lock()
-	defer l.rmrLock.Unlock()
+func addToMapMapArrWithLock(id int, from node.INode, to node.INode, store map[int]map[node.INode][]node.INode, lock *sync.Mutex) {
+	lock.Lock()
+	defer lock.Unlock()
 
-	dict, ok := l.routeMessageReceives[id]
+	dict, ok := store[id]
 	if !ok {
-		l.routeMessageReceives[id] = make(map[node.INode][]node.INode)
-		dict = l.routeMessageReceives[id]
+		store[id] = make(map[node.INode][]node.INode)
+		dict = store[id]
 	}
 
 	dict[from] = append(dict[from], to)
+}
+
+func (l *Logger) AddRouteMessageReceive(id int, from node.INode, to node.INode) {
+	addToMapMapArrWithLock(id, from, to, l.routeMessageReceives, &l.rmrLock)
 }
 
 func (l *Logger) AddRouteMessageTimeout(id int, from node.INode, to node.INode) {
-	l.rmtLock.Lock()
-	defer l.rmtLock.Unlock()
-
-	dict, ok := l.routeMessageTimeouts[id]
-	if !ok {
-		l.routeMessageTimeouts[id] = make(map[node.INode][]node.INode)
-		dict = l.routeMessageTimeouts[id]
-	}
-
-	dict[from] = append(dict[from], to)
+	addToMapMapArrWithLock(id, from, to, l.routeMessageTimeouts, &l.rmtLock)
 }
 
-func (l *Logger) AddRouteMessageConfirms(id int, from node.INode, to node.INode) {
-	l.rmcLock.Lock()
-	defer l.rmcLock.Unlock()
-
-	dict, ok := l.routeMessageConfirms[id]
-	if !ok {
-		l.routeMessageConfirms[id] = make(map[node.INode][]node.INode)
-		dict = l.routeMessageConfirms[id]
-	}
-
-	dict[from] = append(dict[from], to)
+func (l *Logger) AddRouteMessageConfirm(id int, from node.INode, to node.INode) {
+	addToMapMapArrWithLock(id, from, to, l.routeMessageConfirms, &l.rmcLock)
+}
+func (l *Logger) AddDeniedRouteMessageReceive(id int, from node.INode, to node.INode) {
+	addToMapMapArrWithLock(id, from, to, l.deniedRouteMessageReceives, &l.rmrdLock)
+}
+func (l *Logger) AddDeniedRouteMessageTimeout(id int, from node.INode, to node.INode) {
+	addToMapMapArrWithLock(id, from, to, l.deniedRouteMessageTimeouts, &l.rmtdLock)
+}
+func (l *Logger) AddDeniedRouteMessageConfirm(id int, from node.INode, to node.INode) {
+	addToMapMapArrWithLock(id, from, to, l.deniedRouteMessageConfirms, &l.rmcdLock)
 }
 
 func (l *Logger) AddDownloadMessage(id int, from node.INode) {

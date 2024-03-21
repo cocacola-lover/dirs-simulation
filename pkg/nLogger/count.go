@@ -1,45 +1,41 @@
 package nlogger
 
+import (
+	"dirs/simulation/pkg/node"
+	"sync"
+)
+
+func countMapMapArrWithLock(store map[int]map[node.INode][]node.INode, lock *sync.Mutex) int {
+	lock.Lock()
+	defer lock.Unlock()
+
+	ans := 0
+	for _, emap := range store {
+		for _, earr := range emap {
+			ans += len(earr)
+		}
+	}
+
+	return ans
+}
+
 func (l *Logger) CountRouteMessageReceives() int {
-	l.rmrLock.Lock()
-	defer l.rmrLock.Unlock()
-
-	ans := 0
-	for _, emap := range l.routeMessageReceives {
-		for _, earr := range emap {
-			ans += len(earr)
-		}
-	}
-
-	return ans
+	return countMapMapArrWithLock(l.routeMessageReceives, &l.rmrLock)
 }
-
 func (l *Logger) CountRouteMessageTimeouts() int {
-	l.rmtLock.Lock()
-	defer l.rmtLock.Unlock()
-
-	ans := 0
-	for _, emap := range l.routeMessageTimeouts {
-		for _, earr := range emap {
-			ans += len(earr)
-		}
-	}
-
-	return ans
+	return countMapMapArrWithLock(l.routeMessageTimeouts, &l.rmtLock)
 }
-
 func (l *Logger) CountRouteMessageConfirms() int {
-	l.rmcLock.Lock()
-	defer l.rmcLock.Unlock()
-
-	ans := 0
-	for _, emap := range l.routeMessageConfirms {
-		for _, earr := range emap {
-			ans += len(earr)
-		}
-	}
-
-	return ans
+	return countMapMapArrWithLock(l.routeMessageConfirms, &l.rmcLock)
+}
+func (l *Logger) CountDeclinedRouteMessageReceives() int {
+	return countMapMapArrWithLock(l.deniedRouteMessageReceives, &l.rmrdLock)
+}
+func (l *Logger) CountDeclinedRouteMessageTimeouts() int {
+	return countMapMapArrWithLock(l.deniedRouteMessageTimeouts, &l.rmtdLock)
+}
+func (l *Logger) CountDeclinedRouteMessageConfirms() int {
+	return countMapMapArrWithLock(l.deniedRouteMessageConfirms, &l.rmcdLock)
 }
 
 func (l *Logger) CountDownloadMessages() int {
