@@ -48,7 +48,7 @@ func TestNode_ConfirmDownloadMessage(t *testing.T) {
 		node1.ConfirmDownloadMessage(0, "value", node2)
 
 		ok, error := failAtButSuccedAt(func() bool {
-			value, ok := node1.hasKey("key")
+			value, ok := node1.HasKey("key")
 
 			if !ok || value != "value" {
 				return false
@@ -81,7 +81,7 @@ func TestNode_ConfirmDownloadMessage(t *testing.T) {
 		node3.ConfirmDownloadMessage(0, "value", node4)
 
 		ok, error := failAtButSuccedAt(func() bool {
-			value, ok := node1.hasKey("key")
+			value, ok := node1.HasKey("key")
 
 			if !ok || value != "value" {
 				return false
@@ -109,7 +109,7 @@ func TestNode_ReceiveDownloadMessage(t *testing.T) {
 		node2.ReceiveDownloadMessage(0, "key", node1)
 
 		ok, error := failAtButSuccedAt(func() bool {
-			value, ok := node1.hasKey("key")
+			value, ok := node1.HasKey("key")
 
 			if !ok || value != "value" {
 				return false
@@ -142,7 +142,7 @@ func TestNode_ReceiveDownloadMessage(t *testing.T) {
 		node2.ReceiveDownloadMessage(0, "key", node1)
 
 		ok, error := failAtButSuccedAt(func() bool {
-			value, ok := node1.hasKey("key")
+			value, ok := node1.HasKey("key")
 
 			if !ok || value != "value" {
 				return false
@@ -233,7 +233,7 @@ func TestNode_ConfirmRouteMessage(t *testing.T) {
 		node1.ConfirmRouteMessage(0, node2)
 
 		ok, error := failAtButSuccedAt(func() bool {
-			value, ok := node1.hasKey("key")
+			value, ok := node1.HasKey("key")
 
 			if !ok || value != "value" {
 				return false
@@ -266,7 +266,7 @@ func TestNode_ConfirmRouteMessage(t *testing.T) {
 		node3.ConfirmRouteMessage(0, node4)
 
 		ok, error := failAtButSuccedAt(func() bool {
-			value, ok := node1.hasKey("key")
+			value, ok := node1.HasKey("key")
 
 			if !ok || value != "value" {
 				return false
@@ -292,7 +292,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		node1.ReceiveRouteMessage(0, "key", node1)
 
 		ok, error := failAtButSuccedAt(func() bool {
-			value, ok := node1.hasKey("key")
+			value, ok := node1.HasKey("key")
 
 			if !ok || value != "value" {
 				return false
@@ -321,7 +321,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		node1.ReceiveRouteMessage(0, "key", node1)
 
 		ok, error := failAtButSuccedAt(func() bool {
-			value, ok := node1.hasKey("key")
+			value, ok := node1.HasKey("key")
 
 			if !ok || value != "value" {
 				return false

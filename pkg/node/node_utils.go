@@ -1,6 +1,6 @@
 package node
 
-func (n *Node) hasKey(key string) (string, bool) {
+func (n *Node) HasKey(key string) (string, bool) {
 	n.storeLock.RLock()
 	defer n.storeLock.RUnlock()
 
@@ -23,12 +23,16 @@ func (n *Node) forEachFriendExcept(do func(f INode), except INode) []INode {
 
 	fs := n.getNetworkFriends()
 
-	for _, f := range fs {
-		if f == except {
-			continue
-		} else {
-			do(f)
+	for i := 0; i < len(fs); i++ {
+		if fs[i] == except {
+			fs[i] = fs[len(fs)-1]
+			fs = fs[:len(fs)-1]
+
+			if i == len(fs) {
+				break
+			}
 		}
+		do(fs[i])
 	}
 
 	return fs
@@ -68,11 +72,6 @@ func (n *Node) isInConfirmedRequests(id int) bool {
 		return false
 	}
 	return r.routedTo != nil
-}
-
-func (n *Node) requestCameFromMe(id int) bool {
-	r, _ := n.findRequest(id)
-	return r.from == n
 }
 
 func (n *Node) setRouteForRequest(id int, to INode) _RouteRequest {

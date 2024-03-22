@@ -17,7 +17,8 @@ type Node struct {
 	doneMessages     map[int]bool
 	doneMessagesLock sync.RWMutex
 
-	bm *bmp.BandwidthManager
+	bm          *bmp.BandwidthManager
+	selfAddress INode
 
 	getNetworkFriends func() []INode
 	getNetworkTunnel  func(with INode) (int, int)
@@ -36,14 +37,14 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
 		return false
 	}
 
-	_, ok := n.hasKey(key)
+	_, ok := n.HasKey(key)
 
 	if ok {
-		go from.ConfirmRouteMessage(id, n)
+		go from.ConfirmRouteMessage(id, n.selfAddress)
 	} else {
 		r := _NewRouteRequest(id, key, from)
 		r.sentTo = n.forEachFriendExcept(func(f INode) {
-			go f.ReceiveRouteMessage(id, key, n)
+			go f.ReceiveRouteMessage(id, key, n.selfAddress)
 		}, from)
 
 		n.addRequest(r)
@@ -65,15 +66,15 @@ func (n *Node) ConfirmRouteMessage(id int, from INode) bool {
 
 	r := n.setRouteForRequest(id, from)
 
-	if n.requestCameFromMe(id) {
-		go from.ReceiveDownloadMessage(id, r.key, n)
+	if r.from == n.selfAddress {
+		go from.ReceiveDownloadMessage(id, r.key, n.selfAddress)
 	} else {
-		go r.from.ConfirmRouteMessage(id, n)
+		go r.from.ConfirmRouteMessage(id, n.selfAddress)
 	}
 
 	for _, nn := range r.sentTo {
 		if nn != from {
-			go nn.TimeoutRouteMessage(id, n)
+			go nn.TimeoutRouteMessage(id, n.selfAddress)
 		}
 	}
 	return true
@@ -103,7 +104,7 @@ func (n *Node) TimeoutRouteMessage(id int, from INode) bool {
 		n.removeRequest(id)
 
 		for _, nn := range r.sentTo {
-			go nn.TimeoutRouteMessage(id, n)
+			go nn.TimeoutRouteMessage(id, n.selfAddress)
 		}
 	}
 
@@ -114,16 +115,16 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
 
-	val, ok := n.hasKey(key)
+	val, ok := n.HasKey(key)
 
 	if ok {
-		go from.ConfirmDownloadMessage(id, val, n)
+		go from.ConfirmDownloadMessage(id, val, n.selfAddress)
 	} else {
 		n.routeRequestsLock.Lock()
 		defer n.routeRequestsLock.Unlock()
 
 		r, _ := n.findRequest(id)
-		go r.routedTo.ReceiveDownloadMessage(id, key, n)
+		go r.routedTo.ReceiveDownloadMessage(id, key, n.selfAddress)
 	}
 }
 
@@ -139,10 +140,10 @@ func (n *Node) ConfirmDownloadMessage(id int, val string, from INode) {
 
 		r := n.removeRequest(id)
 
-		if r.from == n {
+		if r.from == n.selfAddress {
 			n.putVal(r.key, val)
 		} else {
-			go r.from.ConfirmDownloadMessage(id, val, n)
+			go r.from.ConfirmDownloadMessage(id, val, n.selfAddress)
 		}
 	})
 }
@@ -150,13 +151,33 @@ func (n *Node) ConfirmDownloadMessage(id int, val string, from INode) {
 func (n *Node) Bm() *bmp.BandwidthManager {
 	return n.bm
 }
+func (n *Node) SetSelfAddress(nn INode) {
+	n.selfAddress = nn
+}
 
 func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
-	return &Node{
+	n := &Node{
 		bm:                bmp.NewBandwidthManager(maxDownload, maxUpload),
 		store:             make(map[string]string),
 		doneMessages:      make(map[int]bool),
 		getNetworkFriends: getNetworkFriends,
 		getNetworkTunnel:  getNetworkTunnel,
+	}
+	n.selfAddress = n
+	return n
+}
+
+func (n *Node) SetOuterFunctions(getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
+	n.getNetworkFriends = getNetworkFriends
+	n.getNetworkTunnel = getNetworkTunnel
+	return n
+}
+
+func (n *Node) InitStore(store map[string]string) {
+	n.storeLock.Lock()
+	defer n.storeLock.Unlock()
+
+	for key, val := range store {
+		n.store[key] = val
 	}
 }
