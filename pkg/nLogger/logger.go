@@ -1,22 +1,22 @@
 package nlogger
 
 import (
-	"dirs/simulation/pkg/node"
+	np "dirs/simulation/pkg/node"
 	"sync"
 )
 
 type Logger struct {
 	// Send in search by id from higher node to lower nodes
-	routeMessageReceives       map[int]map[node.INode][]node.INode
-	deniedRouteMessageReceives map[int]map[node.INode][]node.INode
+	routeMessageReceives       map[int]map[np.INode][]np.INode
+	deniedRouteMessageReceives map[int]map[np.INode][]np.INode
 	// Send in search by id from higher node to lower nodes
-	routeMessageTimeouts       map[int]map[node.INode][]node.INode
-	deniedRouteMessageTimeouts map[int]map[node.INode][]node.INode
+	routeMessageTimeouts       map[int]map[np.INode][]np.INode
+	deniedRouteMessageTimeouts map[int]map[np.INode][]np.INode
 	// Send in search by id from lower node to higher nodes
-	routeMessageConfirms       map[int]map[node.INode][]node.INode
-	deniedRouteMessageConfirms map[int]map[node.INode][]node.INode
+	routeMessageConfirms       map[int]map[np.INode][]np.INode
+	deniedRouteMessageConfirms map[int]map[np.INode][]np.INode
 
-	downloadMessages map[int][]node.INode
+	downloadMessages map[int][]np.INode
 
 	rmrLock  sync.Mutex
 	rmtLock  sync.Mutex
@@ -29,12 +29,12 @@ type Logger struct {
 
 func NewLogger() *Logger {
 	return &Logger{
-		routeMessageReceives:       make(map[int]map[node.INode][]node.INode),
-		routeMessageTimeouts:       make(map[int]map[node.INode][]node.INode),
-		routeMessageConfirms:       make(map[int]map[node.INode][]node.INode),
-		deniedRouteMessageReceives: make(map[int]map[node.INode][]node.INode),
-		deniedRouteMessageTimeouts: make(map[int]map[node.INode][]node.INode),
-		deniedRouteMessageConfirms: make(map[int]map[node.INode][]node.INode),
-		downloadMessages:           make(map[int][]node.INode),
+		routeMessageReceives:       make(map[int]map[np.INode][]np.INode),
+		routeMessageTimeouts:       make(map[int]map[np.INode][]np.INode),
+		routeMessageConfirms:       make(map[int]map[np.INode][]np.INode),
+		deniedRouteMessageReceives: make(map[int]map[np.INode][]np.INode),
+		deniedRouteMessageTimeouts: make(map[int]map[np.INode][]np.INode),
+		deniedRouteMessageConfirms: make(map[int]map[np.INode][]np.INode),
+		downloadMessages:           make(map[int][]np.INode),
 	}
 }

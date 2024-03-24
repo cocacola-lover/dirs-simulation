@@ -5,15 +5,23 @@ import (
 	"sync"
 )
 
+func countMapArr(store map[node.INode][]node.INode) int {
+	ans := 0
+
+	for _, arr := range store {
+		ans += len(arr)
+	}
+
+	return ans
+}
+
 func countMapMapArrWithLock(store map[int]map[node.INode][]node.INode, lock *sync.Mutex) int {
 	lock.Lock()
 	defer lock.Unlock()
 
 	ans := 0
 	for _, emap := range store {
-		for _, earr := range emap {
-			ans += len(earr)
-		}
+		ans += countMapArr(emap)
 	}
 
 	return ans
