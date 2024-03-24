@@ -3,6 +3,7 @@ package loggernode
 import (
 	nlogger "dirs/simulation/pkg/nLogger"
 	"dirs/simulation/pkg/node"
+	"math"
 	"testing"
 	"time"
 )
@@ -108,16 +109,16 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		if logger.CountRouteMessageReceives() != eR {
 			t.Errorf("Expected %d R but got %d", eR, logger.CountRouteMessageReceives())
 		}
-		if logger.CountRouteMessageConfirms()-eC >= 1 {
+		if math.Abs(float64(logger.CountRouteMessageConfirms()-eC)) >= 1 {
 			t.Errorf("Expected %d C but got %d", eC, logger.CountRouteMessageConfirms())
 		}
-		if logger.CountRouteMessageTimeouts()-eT >= 1 {
+		if math.Abs(float64(logger.CountRouteMessageTimeouts()-eT)) >= 1 {
 			t.Errorf("Expected %d T but got %d", eT, logger.CountRouteMessageTimeouts())
 		}
 		if logger.CountDeclinedRouteMessageReceives() != eDR {
 			t.Errorf("Expected %d DR but got %d", eDR, logger.CountDeclinedRouteMessageReceives())
 		}
-		if logger.CountDeclinedRouteMessageConfirms()-eDC >= 1 {
+		if math.Abs(float64(logger.CountDeclinedRouteMessageConfirms()-eDC)) >= 1 {
 			t.Errorf("Expected %d DC but got %d", eDC, logger.CountDeclinedRouteMessageConfirms())
 		}
 		if logger.CountDeclinedRouteMessageTimeouts() != eDT {
