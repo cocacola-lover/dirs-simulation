@@ -10,6 +10,12 @@ type INode interface {
 
 	ReceiveDownloadMessage(id int, key string, from INode)
 	ConfirmDownloadMessage(id int, val string, from INode)
+
 	Bm() *bmp.BandwidthManager
+
 	SetSelfAddress(n INode)
+	GetSelfAddress() INode
+
+	PutVal(key, val string)
+	HasKey(key string) (string, bool)
 }

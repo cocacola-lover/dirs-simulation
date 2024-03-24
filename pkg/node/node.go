@@ -26,7 +26,6 @@ type Node struct {
 }
 
 func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
-
 	if n.selfAddress != from {
 		_, tunnelLength := n.getTunnel(from)
 		time.Sleep(time.Millisecond * time.Duration(tunnelLength))
@@ -39,7 +38,7 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
 		return false
 	}
 
-	_, ok := n.HasKey(key)
+	_, ok := n.selfAddress.HasKey(key)
 
 	if ok {
 		go from.ConfirmRouteMessage(id, n.selfAddress)
@@ -117,7 +116,7 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
 
-	val, ok := n.HasKey(key)
+	val, ok := n.selfAddress.HasKey(key)
 
 	if ok {
 		go from.ConfirmDownloadMessage(id, val, n.selfAddress)
@@ -143,7 +142,7 @@ func (n *Node) ConfirmDownloadMessage(id int, val string, from INode) {
 		r := n.removeRequest(id)
 
 		if r.from == n.selfAddress {
-			n.PutVal(r.key, val)
+			n.selfAddress.PutVal(r.key, val)
 		} else {
 			go r.from.ConfirmDownloadMessage(id, val, n.selfAddress)
 		}
@@ -155,6 +154,9 @@ func (n *Node) Bm() *bmp.BandwidthManager {
 }
 func (n *Node) SetSelfAddress(nn INode) {
 	n.selfAddress = nn
+}
+func (n *Node) GetSelfAddress() INode {
+	return n.selfAddress
 }
 
 func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
