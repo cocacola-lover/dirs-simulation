@@ -27,8 +27,10 @@ type Node struct {
 
 func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
 
-	_, tunnelLength := n.getTunnel(from)
-	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
+	if n.selfAddress != from {
+		_, tunnelLength := n.getTunnel(from)
+		time.Sleep(time.Millisecond * time.Duration(tunnelLength))
+	}
 
 	n.routeRequestsLock.Lock()
 	defer n.routeRequestsLock.Unlock()
@@ -141,7 +143,7 @@ func (n *Node) ConfirmDownloadMessage(id int, val string, from INode) {
 		r := n.removeRequest(id)
 
 		if r.from == n.selfAddress {
-			n.putVal(r.key, val)
+			n.PutVal(r.key, val)
 		} else {
 			go r.from.ConfirmDownloadMessage(id, val, n.selfAddress)
 		}
@@ -171,13 +173,4 @@ func (n *Node) SetOuterFunctions(getNetworkFriends func() []INode, getNetworkTun
 	n.getNetworkFriends = getNetworkFriends
 	n.getNetworkTunnel = getNetworkTunnel
 	return n
-}
-
-func (n *Node) InitStore(store map[string]string) {
-	n.storeLock.Lock()
-	defer n.storeLock.Unlock()
-
-	for key, val := range store {
-		n.store[key] = val
-	}
 }

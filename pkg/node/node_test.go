@@ -6,8 +6,10 @@ import (
 )
 
 var friendsFactory = func(nodes ...INode) func() []INode {
+	ans := []INode{}
+	ans = append(ans, nodes...)
 	return func() []INode {
-		return nodes
+		return ans
 	}
 }
 
@@ -41,7 +43,7 @@ func TestNode_ConfirmDownloadMessage(t *testing.T) {
 		node2 := NewNode(1, 1, nil, tunnelFactory())
 		node1.getNetworkFriends, node2.getNetworkFriends = friendsFactory(node2), friendsFactory(node1)
 
-		node2.putVal("key", "value")
+		node2.PutVal("key", "value")
 
 		node1.addRequest(newRouteRequest(0, "key", node1, node2, nil))
 
@@ -72,7 +74,7 @@ func TestNode_ConfirmDownloadMessage(t *testing.T) {
 		node3.getNetworkFriends = friendsFactory(node2, node4)
 		node4.getNetworkFriends = friendsFactory(node3)
 
-		node4.putVal("key", "value")
+		node4.PutVal("key", "value")
 
 		node1.addRequest(newRouteRequest(0, "key", node1, node2, nil))
 		node2.addRequest(newRouteRequest(0, "key", node1, node3, nil))
@@ -102,7 +104,7 @@ func TestNode_ReceiveDownloadMessage(t *testing.T) {
 		node2 := NewNode(1, 1, nil, tunnelFactory())
 		node1.getNetworkFriends, node2.getNetworkFriends = friendsFactory(node2), friendsFactory(node1)
 
-		node2.putVal("key", "value")
+		node2.PutVal("key", "value")
 
 		node1.addRequest(newRouteRequest(0, "key", node1, node2, nil))
 
@@ -133,7 +135,7 @@ func TestNode_ReceiveDownloadMessage(t *testing.T) {
 		node3.getNetworkFriends = friendsFactory(node2, node4)
 		node4.getNetworkFriends = friendsFactory(node3)
 
-		node4.putVal("key", "value")
+		node4.PutVal("key", "value")
 
 		node1.addRequest(newRouteRequest(0, "key", node1, node2, nil))
 		node2.addRequest(newRouteRequest(0, "key", node1, node3, nil))
@@ -190,7 +192,7 @@ func TestNode_TimeoutRouteMessage(t *testing.T) {
 		node3.getNetworkFriends = friendsFactory(node2, node4)
 		node4.getNetworkFriends = friendsFactory(node3, node5)
 
-		node4.putVal("key", "value")
+		node4.PutVal("key", "value")
 
 		node1.addRequest(newRouteRequest(0, "key", node1, node2, []INode{node2}))
 		node2.addRequest(newRouteRequest(0, "key", node1, node3, []INode{node3}))
@@ -227,7 +229,7 @@ func TestNode_ConfirmRouteMessage(t *testing.T) {
 		node1 := NewNode(1, 1, nil, tunnelFactory())
 		node2 := NewNode(1, 1, nil, tunnelFactory())
 		node1.getNetworkFriends, node2.getNetworkFriends = friendsFactory(node2), friendsFactory(node1)
-		node2.putVal("key", "value")
+		node2.PutVal("key", "value")
 
 		node1.addRequest(newRouteRequest(0, "key", node1, nil, nil))
 		node1.ConfirmRouteMessage(0, node2)
@@ -257,7 +259,7 @@ func TestNode_ConfirmRouteMessage(t *testing.T) {
 		node3.getNetworkFriends = friendsFactory(node2, node4)
 		node4.getNetworkFriends = friendsFactory(node3)
 
-		node4.putVal("key", "value")
+		node4.PutVal("key", "value")
 
 		node1.addRequest(newRouteRequest(0, "key", node1, nil, []INode{node2}))
 		node2.addRequest(newRouteRequest(0, "key", node1, nil, []INode{node3}))
@@ -286,7 +288,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		node1 := NewNode(1, 1, nil, tunnelFactory())
 		node2 := NewNode(1, 1, nil, tunnelFactory())
 		node1.getNetworkFriends, node2.getNetworkFriends = friendsFactory(node2), friendsFactory(node1)
-		node2.putVal("key", "value")
+		node2.PutVal("key", "value")
 
 		// node1.addRequest(newRouteRequest(0, "key", node1, nil, nil))
 		node1.ReceiveRouteMessage(0, "key", node1)
@@ -316,7 +318,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		node3.getNetworkFriends = friendsFactory(node2, node4)
 		node4.getNetworkFriends = friendsFactory(node3)
 
-		node4.putVal("key", "value")
+		node4.PutVal("key", "value")
 
 		node1.ReceiveRouteMessage(0, "key", node1)
 
@@ -327,10 +329,54 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 				return false
 			}
 			return true
-		}, 20, 30)
+		}, 20, 32)
 
 		if !ok {
 			t.Fatalf("Adding to store failed : %s\n", error)
 		}
 	})
+}
+
+func TestNode(t *testing.T) {
+
+	t.Run("Test end-to-end two messages", func(t *testing.T) {
+		node1 := NewNode(1, 1, nil, tunnelFactory())
+		node2 := NewNode(1, 1, nil, tunnelFactory())
+		node3 := NewNode(1, 1, nil, tunnelFactory())
+		node4 := NewNode(1, 1, nil, tunnelFactory())
+
+		node1.getNetworkFriends = func() []INode {
+			return []INode{node2}
+		}
+		node2.getNetworkFriends = func() []INode {
+			return []INode{node1, node3}
+		}
+		node3.getNetworkFriends = func() []INode {
+			return []INode{node2, node4}
+		}
+		node4.getNetworkFriends = func() []INode {
+			return []INode{node3}
+		}
+
+		node4.PutVal("key", "value")
+
+		node2.ReceiveRouteMessage(0, "key", node2)
+		time.Sleep(time.Millisecond)
+		node1.ReceiveRouteMessage(1, "key", node1)
+
+		ok, error := failAtButSuccedAt(func() bool {
+			v1, ok1 := node1.HasKey("key")
+			v2, ok2 := node2.HasKey("key")
+
+			if !ok1 || !ok2 || v1 != "value" || v2 != "value" {
+				return false
+			}
+			return true
+		}, 20, 35)
+
+		if !ok {
+			t.Fatalf("Adding to store failed : %s\n", error)
+		}
+	})
+
 }

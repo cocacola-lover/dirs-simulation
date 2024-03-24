@@ -19,30 +19,6 @@ var tunnelFactory = func() func(with node.INode) (int, int) {
 	}
 }
 
-var testLogs = func(t *testing.T, l *nlogger.Logger, eR int, eC int, eT int, eDR int, eDC int, eDT int, eD int) {
-	if l.CountRouteMessageReceives() != eR {
-		t.Errorf("Expected %d R but got %d", eR, l.CountRouteMessageReceives())
-	}
-	if l.CountRouteMessageConfirms() != eC {
-		t.Errorf("Expected %d C but got %d", eC, l.CountRouteMessageConfirms())
-	}
-	if l.CountDeclinedRouteMessageTimeouts() != eT {
-		t.Errorf("Expected %d T but got %d", eT, l.CountDeclinedRouteMessageTimeouts())
-	}
-	if l.CountDeclinedRouteMessageReceives() != eDR {
-		t.Errorf("Expected %d DR but got %d", eDR, l.CountDeclinedRouteMessageReceives())
-	}
-	if l.CountDeclinedRouteMessageConfirms() != eDC {
-		t.Errorf("Expected %d DC but got %d", eDC, l.CountDeclinedRouteMessageConfirms())
-	}
-	if l.CountDeclinedRouteMessageTimeouts() != eDT {
-		t.Errorf("Expected %d DT but got %d", eDT, l.CountDeclinedRouteMessageTimeouts())
-	}
-	if l.CountDownloadMessages() != eD {
-		t.Errorf("Expected %d D but got %d", eD, l.CountDownloadMessages())
-	}
-}
-
 func TestNode_ReceiveRouteMessage(t *testing.T) {
 
 	t.Run("Test simple ReceiveRouteMessage", func(t *testing.T) {
@@ -57,7 +33,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory())
 		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory())
 
-		baseNode2.InitStore(map[string]string{"key": "value"})
+		baseNode2.PutVal("key", "value")
 
 		node1.ReceiveRouteMessage(0, "key", node1)
 
@@ -117,7 +93,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		baseNode5.SetOuterFunctions(friendsFactory(node4, node6), tunnelFactory())
 		baseNode6.SetOuterFunctions(friendsFactory(node5, node2), tunnelFactory())
 
-		baseNode4.InitStore(map[string]string{"key": "value"})
+		baseNode4.PutVal("key", "value")
 		node1.ReceiveRouteMessage(0, "key", node1)
 
 		time.Sleep(100 * time.Millisecond)

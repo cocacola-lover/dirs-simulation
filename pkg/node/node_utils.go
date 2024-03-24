@@ -8,7 +8,7 @@ func (n *Node) HasKey(key string) (string, bool) {
 	return v, ok
 }
 
-func (n *Node) putVal(key, val string) {
+func (n *Node) PutVal(key, val string) {
 	n.storeLock.Lock()
 	defer n.storeLock.Unlock()
 
@@ -90,8 +90,10 @@ func (n *Node) addRequest(r _RouteRequest) {
 func (n *Node) removeRequest(id int) _RouteRequest {
 	for i := 0; i < len(n.routeRequests); i++ {
 		if n.routeRequests[i].id == id {
-			n.routeRequests[i] = n.routeRequests[len(n.routeRequests)-1]
-			defer func() { n.routeRequests = n.routeRequests[:(len(n.routeRequests) - 1)] }()
+			defer func() {
+				n.routeRequests[i] = n.routeRequests[len(n.routeRequests)-1]
+				n.routeRequests = n.routeRequests[:(len(n.routeRequests) - 1)]
+			}()
 			return n.routeRequests[i]
 		}
 	}
