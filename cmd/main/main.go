@@ -1,8 +1,6 @@
 package main
 
 import (
-	crp "dirs/simulation/pkg/controlledRandom"
-	mp "dirs/simulation/pkg/message"
 	netp "dirs/simulation/pkg/network"
 	"fmt"
 	"time"
@@ -10,24 +8,27 @@ import (
 
 func main() {
 
-	n := 100
+	n := 10000
+	net, searchers, havers := netp.NewTestSearchNetwork(n, 3, netp.SearchRequest{
+		Key:               "key",
+		Val:               "value",
+		Popularity:        0.01,
+		NumberOfSearchers: 1,
+	})
 
-	net := netp.NewRandomNetwork(netp.FactoryInitRandomBaseNode(1, 10), n, 3)
+	fmt.Printf("Havers are %v\n", havers)
+	fmt.Printf("Searchers are %v\n", searchers)
 
-	puttingMessageIn := crp.Rand.Intn(n-1) + 2
-	fmt.Printf("Putting message in %d\n", puttingMessageIn)
-	net.Get(puttingMessageIn).InitStore(map[string]string{"key": "value"})
+	for i, v := range searchers[0] {
+		net.Get(v).ReceiveRouteMessage(i, "key", net.Get(v))
+	}
 
-	search1 := mp.NewFirstMessage("key", net.Get(0))
-	search2 := mp.NewFirstMessage("key", net.Get(1))
+	// fmt.Print(net.Graph)
 
-	go net.Get(0).Ask(search1)
-	go net.Get(1).Ask(search2)
+	time.Sleep(time.Millisecond * 200)
 
-	search1.WaitForDone()
-	search2.WaitForDone()
+	for i, v := range searchers[0] {
+		fmt.Println(net.LoggerStringById(i, net.Get(v)))
+	}
 
-	time.Sleep(time.Millisecond * 100)
-
-	fmt.Println(net.StringLogger())
 }
