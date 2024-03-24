@@ -1,34 +1,37 @@
 package main
 
 import (
+	crp "dirs/simulation/pkg/controlledRandom"
 	netp "dirs/simulation/pkg/network"
 	"fmt"
+	"strings"
 	"time"
 )
 
 func main() {
 
+	id := 0
 	n := 10000
-	net, searchers, havers := netp.NewTestSearchNetwork(n, 3, netp.SearchRequest{
-		Key:               "key",
-		Val:               "value",
-		Popularity:        0.01,
-		NumberOfSearchers: 1,
-	})
 
-	fmt.Printf("Havers are %v\n", havers)
-	fmt.Printf("Searchers are %v\n", searchers)
+	trialNet := netp.NewTrialNetwork(netp.NewBaseNetwork(n, 3))
 
-	for i, v := range searchers[0] {
-		net.Get(v).ReceiveRouteMessage(i, "key", net.Get(v))
-	}
+	trialNet.GenerateTasks(func() netp.SearchRequest {
+		defer func() {
+			id++
+		}()
 
-	// fmt.Print(net.Graph)
+		return netp.SearchRequest{
+			Id:                id,
+			Key:               fmt.Sprint(id),
+			Val:               strings.Repeat("v", 4*(id%4)),
+			Popularity:        crp.Rand.Float64() / 20,
+			NumberOfSearchers: crp.Rand.Intn(9) + 1,
+		}
+	}, func() time.Duration {
+		return time.Millisecond * 100
+	}, time.Second)
 
-	time.Sleep(time.Millisecond * 200)
+	time.Sleep(time.Millisecond * 100)
 
-	for i, v := range searchers[0] {
-		fmt.Println(net.LoggerStringById(i, net.Get(v)))
-	}
-
+	fmt.Print(trialNet)
 }
