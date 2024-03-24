@@ -1,9 +1,9 @@
 package network
 
 import (
-	fp "dirs/simulation/pkg/fundamentals"
 	gp "dirs/simulation/pkg/graph"
-	lp "dirs/simulation/pkg/logger"
+	nlogger "dirs/simulation/pkg/nLogger"
+	np "dirs/simulation/pkg/node"
 )
 
 type Tunnel struct {
@@ -13,27 +13,24 @@ type Tunnel struct {
 
 type Network struct {
 	gp.Graph[Tunnel]
-	nodes     []fp.INode
-	phoneBook map[fp.INode]int
-	Logger    *lp.Logger
+	nodes     []np.INode
+	phoneBook map[np.INode]int
+	Logger    *nlogger.Logger
 }
 
-func (net Network) GetTunnel(node1, node2 fp.INode) Tunnel {
+// Returns tunnel.Width and tunnel.Length
+func (net Network) GetTunnel(node1, node2 np.INode) (int, int) {
 	tunnel, ok := net.HasPath(net.phoneBook[node1], net.phoneBook[node2])
 
 	if ok {
-		return tunnel
+		return tunnel.Width, tunnel.Length
 	} else {
 		panic("Tried to get Tunnel between two nodes that do not have a tunnel")
 	}
 }
 
-func (net Network) StringLogger() string {
-	return net.Logger.String(net.phoneBook)
-}
-
-func (net Network) GetFriends(node fp.INode) []fp.INode {
-	ans := []fp.INode{}
+func (net Network) GetFriends(node np.INode) []np.INode {
+	ans := []np.INode{}
 
 	indsOfFriends, _ := net.GetPaths(net.phoneBook[node])
 
@@ -44,11 +41,15 @@ func (net Network) GetFriends(node fp.INode) []fp.INode {
 	return ans
 }
 
-func (net Network) Get(i int) fp.INode {
+func (net Network) Get(i int) np.INode {
 	return net.nodes[i]
 }
 
 func (net Network) String() string {
 	str := net.Graph.String()
 	return str
+}
+
+func (net Network) LoggerStringById(id int, lead np.INode) string {
+	return net.Logger.StringByIdVerbose(id, lead, net.phoneBook)
 }
