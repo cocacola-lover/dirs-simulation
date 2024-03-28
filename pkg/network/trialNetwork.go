@@ -1,7 +1,6 @@
 package network
 
 import (
-	"sync/atomic"
 	"time"
 )
 
@@ -19,7 +18,7 @@ type TrialNetwork struct {
 	*Network
 }
 
-var idCounter int64 = 0
+var idCounter int = 0
 
 func (tn *TrialNetwork) GenerateTasks(reqGen func() SearchRequest, intervalGen func() time.Duration, timer time.Duration) {
 
@@ -35,9 +34,8 @@ func (tn *TrialNetwork) GenerateTasks(reqGen func() SearchRequest, intervalGen f
 		}
 
 		for _, each := range searchers {
-			id := atomic.LoadInt64(&idCounter)
-			go tn.Get(each).ReceiveRouteMessage(int(id), req.Key, tn.Get(each))
-			atomic.StoreInt64(&idCounter, id+1)
+			go tn.Get(each).ReceiveRouteMessage(idCounter, req.Key, tn.Get(each))
+			idCounter++
 		}
 
 		time.Sleep(intervalGen())

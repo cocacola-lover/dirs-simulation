@@ -69,31 +69,41 @@ func NewBaseNetwork(size, degree int) *Network {
 // Test Network that is populated by base nodes and lazy nodes.
 func NewLazyNetwork(size int, degree int, lazyPop float64) *Network {
 	return NewRandomNetwork(func(net *Network, i int) np.INode {
-		var bn np.INode
+		var n np.INode
 
 		if lazyPop >= crp.Rand.Float64() {
-			bn = lazynode.NewLazyNode(
+			bn := lazynode.NewLazyNode(
 				crp.Rand.Intn(10)+1,
 				crp.Rand.Intn(10)+1,
 				nil, nil,
+			)
+
+			n = lnp.NewLoggerNode(bn, net.Logger)
+
+			bn.SetOuterFunctions(
+				func() []np.INode {
+					return net.GetFriends(n)
+				}, func(with np.INode) (int, int) {
+					return net.GetTunnel(n, with)
+				},
 			)
 		} else {
-			bn = np.NewNode(
+			bn := np.NewNode(
 				crp.Rand.Intn(10)+1,
 				crp.Rand.Intn(10)+1,
 				nil, nil,
 			)
+
+			n = lnp.NewLoggerNode(bn, net.Logger)
+
+			bn.SetOuterFunctions(
+				func() []np.INode {
+					return net.GetFriends(n)
+				}, func(with np.INode) (int, int) {
+					return net.GetTunnel(n, with)
+				},
+			)
 		}
-
-		n := lnp.NewLoggerNode(bn, net.Logger)
-
-		bn.(*np.Node).SetOuterFunctions(
-			func() []np.INode {
-				return net.GetFriends(n)
-			}, func(with np.INode) (int, int) {
-				return net.GetTunnel(n, with)
-			},
-		)
 
 		return n
 	}, size, degree)
