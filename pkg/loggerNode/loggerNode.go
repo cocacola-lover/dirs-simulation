@@ -3,11 +3,16 @@ package loggernode
 import (
 	lp "dirs/simulation/pkg/nLogger"
 	"dirs/simulation/pkg/node"
+	snp "dirs/simulation/pkg/searcherNode"
+	"sync"
 )
 
 type LoggerNode struct {
-	node.INode
+	*snp.SearcherNode
 	logger *lp.Logger
+
+	searches     map[int]chan bool
+	searchesLock sync.Mutex
 }
 
 func (ln *LoggerNode) ReceiveRouteMessage(id int, key string, from node.INode) bool {
@@ -55,8 +60,53 @@ func (ln *LoggerNode) ConfirmDownloadMessage(id int, val string, from node.INode
 	go ln.logger.AddDownloadMessage(id, from)
 }
 
-func NewLoggerNode(node node.INode, logger *lp.Logger) *LoggerNode {
-	ln := &LoggerNode{INode: node, logger: logger}
-	ln.INode.SetSelfAddress(ln)
+func (ln *LoggerNode) StartSearch(id int, key string) {
+	ch := make(chan bool)
+	ln.searchesLock.Lock()
+	ln.searches[id] = ch
+	ln.searchesLock.Unlock()
+
+	ln.logger.StartSearch(id)
+	ln.SearcherNode.StartSearch(id, key, ch)
+}
+
+func (ln *LoggerNode) PutVal(key, val string) {
+	ln.SearcherNode.PutVal(key, val)
+
+	ln.searchesLock.Lock()
+	defer ln.searchesLock.Unlock()
+	for id, ch := range ln.searches {
+		select {
+		case <-ch:
+			delete(ln.searches, id)
+			ln.logger.EndSearch(id)
+		default:
+			continue
+		}
+	}
+}
+
+func (ln *LoggerNode) WaitToFinishAllSearches() {
+	for {
+		ln.searchesLock.Lock()
+		if len(ln.searches) == 0 {
+			ln.searchesLock.Unlock()
+			return
+		}
+
+		var pickCh chan bool
+		for _, ch := range ln.searches {
+			pickCh = ch
+			break
+		}
+		ln.searchesLock.Unlock()
+
+		<-pickCh
+	}
+}
+
+func NewLoggerNode(node *snp.SearcherNode, logger *lp.Logger) *LoggerNode {
+	ln := &LoggerNode{SearcherNode: node, logger: logger, searches: make(map[int]chan bool)}
+	ln.SetSelfAddress(ln)
 	return ln
 }

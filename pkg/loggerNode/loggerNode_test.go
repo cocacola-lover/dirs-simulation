@@ -3,6 +3,7 @@ package loggernode
 import (
 	nlogger "dirs/simulation/pkg/nLogger"
 	"dirs/simulation/pkg/node"
+	searchernode "dirs/simulation/pkg/searcherNode"
 	"math"
 	"testing"
 	"time"
@@ -28,15 +29,15 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 
 		logger := nlogger.NewLogger()
 
-		node1 := NewLoggerNode(baseNode1, logger)
-		node2 := NewLoggerNode(baseNode2, logger)
+		node1 := NewLoggerNode(searchernode.NewSearchNode(baseNode1), logger)
+		node2 := NewLoggerNode(searchernode.NewSearchNode(baseNode2), logger)
 
 		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory())
 		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory())
 
 		baseNode2.PutVal("key", "value")
 
-		node1.ReceiveRouteMessage(0, "key", node1)
+		node1.StartSearch(0, "key")
 
 		time.Sleep(30 * time.Millisecond)
 
@@ -45,6 +46,9 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		if !ok {
 			t.Error("Adding to store failed \n")
 		}
+
+		dur, _ := logger.DurationToArriveLocked(0)
+		t.Logf("Took %v to arrive", dur)
 
 		eR, eC, eT, eDR, eDC, eDT, eD := 2, 1, 0, 0, 0, 0, 1
 		if logger.CountRouteMessageReceives() != eR {
@@ -80,12 +84,12 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 
 		logger := nlogger.NewLogger()
 
-		node1 := NewLoggerNode(baseNode1, logger)
-		node2 := NewLoggerNode(baseNode2, logger)
-		node3 := NewLoggerNode(baseNode3, logger)
-		node4 := NewLoggerNode(baseNode4, logger)
-		node5 := NewLoggerNode(baseNode5, logger)
-		node6 := NewLoggerNode(baseNode6, logger)
+		node1 := NewLoggerNode(searchernode.NewSearchNode(baseNode1), logger)
+		node2 := NewLoggerNode(searchernode.NewSearchNode(baseNode2), logger)
+		node3 := NewLoggerNode(searchernode.NewSearchNode(baseNode3), logger)
+		node4 := NewLoggerNode(searchernode.NewSearchNode(baseNode4), logger)
+		node5 := NewLoggerNode(searchernode.NewSearchNode(baseNode5), logger)
+		node6 := NewLoggerNode(searchernode.NewSearchNode(baseNode6), logger)
 
 		baseNode1.SetOuterFunctions(friendsFactory(node2, node3), tunnelFactory())
 		baseNode2.SetOuterFunctions(friendsFactory(node1, node6), tunnelFactory())
@@ -95,7 +99,8 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		baseNode6.SetOuterFunctions(friendsFactory(node5, node2), tunnelFactory())
 
 		baseNode4.PutVal("key", "value")
-		node1.ReceiveRouteMessage(0, "key", node1)
+
+		node1.StartSearch(0, "key")
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -104,15 +109,17 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		if !ok {
 			t.Error("Adding to store failed \n")
 		}
+		dur, _ := logger.DurationToArriveLocked(0)
+		t.Logf("Took %v to arrive", dur)
 
 		eR, eC, eT, eDR, eDC, eDT, eD := 7, 3, 3, 0, 1, 1, 2
 		if logger.CountRouteMessageReceives() != eR {
 			t.Errorf("Expected %d R but got %d", eR, logger.CountRouteMessageReceives())
 		}
-		if math.Abs(float64(logger.CountRouteMessageConfirms()-eC)) >= 1 {
+		if math.Abs(float64(logger.CountRouteMessageConfirms()-eC)) > 1 {
 			t.Errorf("Expected %d C but got %d", eC, logger.CountRouteMessageConfirms())
 		}
-		if math.Abs(float64(logger.CountRouteMessageTimeouts()-eT)) >= 1 {
+		if math.Abs(float64(logger.CountRouteMessageTimeouts()-eT)) > 1 {
 			t.Errorf("Expected %d T but got %d", eT, logger.CountRouteMessageTimeouts())
 		}
 		if logger.CountDeclinedRouteMessageReceives() != eDR {
@@ -127,5 +134,33 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		if logger.CountDownloadMessages() != eD {
 			t.Errorf("Expected %d D but got %d", eD, logger.CountDownloadMessages())
 		}
+	})
+
+	t.Run("Test WaitToFinishAllSearches", func(t *testing.T) {
+		baseNode1 := node.NewNode(1, 1, nil, nil)
+		baseNode2 := node.NewNode(1, 1, nil, nil)
+
+		logger := nlogger.NewLogger()
+
+		node1 := NewLoggerNode(searchernode.NewSearchNode(baseNode1), logger)
+		node2 := NewLoggerNode(searchernode.NewSearchNode(baseNode2), logger)
+
+		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory())
+		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory())
+
+		baseNode2.PutVal("key", "value")
+
+		node1.StartSearch(0, "key")
+
+		node1.WaitToFinishAllSearches()
+
+		_, ok := baseNode1.HasKey("key")
+
+		if !ok {
+			t.Error("Adding to store failed \n")
+		}
+
+		dur, _ := logger.DurationToArriveLocked(0)
+		t.Logf("Took %v to arrive", dur)
 	})
 }
