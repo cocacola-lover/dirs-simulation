@@ -2,6 +2,7 @@ package network
 
 import (
 	gp "dirs/simulation/pkg/graph"
+	lnp "dirs/simulation/pkg/loggerNode"
 	nlogger "dirs/simulation/pkg/nLogger"
 	np "dirs/simulation/pkg/node"
 )
@@ -13,7 +14,7 @@ type Tunnel struct {
 
 type Network struct {
 	gp.Graph[Tunnel]
-	nodes     []np.INode
+	nodes     []*lnp.LoggerNode
 	phoneBook map[np.INode]int
 	Logger    *nlogger.Logger
 }
@@ -41,7 +42,7 @@ func (net Network) GetFriends(node np.INode) []np.INode {
 	return ans
 }
 
-func (net Network) Get(i int) np.INode {
+func (net Network) Get(i int) *lnp.LoggerNode {
 	return net.nodes[i]
 }
 
@@ -50,6 +51,6 @@ func (net Network) String() string {
 	return str
 }
 
-func (net Network) LoggerStringById(id int, lead np.INode) string {
+func (net Network) LoggerStringById(id int, lead *lnp.LoggerNode) string {
 	return net.Logger.StringByIdVerbose(id, lead, net.phoneBook)
 }

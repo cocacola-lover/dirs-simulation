@@ -30,11 +30,12 @@ func (tn *TrialNetwork) GenerateTasks(reqGen func() SearchRequest, intervalGen f
 		searchers, havers := devideSearchersAndHavers(len(tn.nodes), req)
 
 		for _, each := range havers {
-			tn.Get(each).PutVal(req.Key, req.Val)
+			tn.Get(each).INode.PutVal(req.Key, req.Val)
 		}
 
 		for _, each := range searchers {
-			go tn.Get(each).ReceiveRouteMessage(idCounter, req.Key, tn.Get(each))
+			go tn.Get(each).StartSearch(idCounter, req.Key)
+			// go tn.Get(each).ReceiveRouteMessage(idCounter, req.Key, tn.Get(each))
 			idCounter++
 		}
 
