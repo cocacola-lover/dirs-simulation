@@ -3,6 +3,7 @@ package nlogger
 import (
 	"dirs/simulation/pkg/node"
 	"sync"
+	"time"
 )
 
 func countMapArr(store map[node.INode][]node.INode) int {
@@ -56,4 +57,20 @@ func (l *Logger) CountDownloadMessages() int {
 	}
 
 	return ans
+}
+
+func (l *Logger) DurationToArriveLocked(id int) (time.Duration, bool) {
+	l.setLock.Lock()
+	defer l.setLock.Unlock()
+
+	arr, ok := l.seTimestamps[id]
+	if !ok {
+		panic("NO TIMESTAMP FOR ID")
+	}
+
+	if arr[1].IsZero() {
+		return 0, false
+	}
+
+	return arr[1].Sub(arr[0]), true
 }

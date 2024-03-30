@@ -3,9 +3,12 @@ package nlogger
 import (
 	np "dirs/simulation/pkg/node"
 	"sync"
+	"time"
 )
 
 type Logger struct {
+	// Start-End timestamps
+	seTimestamps map[int][]time.Time
 	// Send in search by id from higher node to lower nodes
 	routeMessageReceives       map[int]map[np.INode][]np.INode
 	deniedRouteMessageReceives map[int]map[np.INode][]np.INode
@@ -18,6 +21,7 @@ type Logger struct {
 
 	downloadMessages map[int][]np.INode
 
+	setLock  sync.Mutex
 	rmrLock  sync.Mutex
 	rmtLock  sync.Mutex
 	rmcLock  sync.Mutex
@@ -36,5 +40,6 @@ func NewLogger() *Logger {
 		deniedRouteMessageTimeouts: make(map[int]map[np.INode][]np.INode),
 		deniedRouteMessageConfirms: make(map[int]map[np.INode][]np.INode),
 		downloadMessages:           make(map[int][]np.INode),
+		seTimestamps:               make(map[int][]time.Time),
 	}
 }
