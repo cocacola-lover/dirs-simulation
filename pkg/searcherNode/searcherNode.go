@@ -17,7 +17,7 @@ func (sn *SearcherNode) StartSearch(id int, key string, ch chan bool) {
 	sn.searches[key] = ch
 	sn.searchesLock.Unlock()
 
-	if !sn.INode.ReceiveRouteMessage(id, key, sn.GetSelfAddress()) {
+	if !sn.GetSelfAddress().ReceiveRouteMessage(id, key, sn.GetSelfAddress()) {
 		panic("ReceiveRouteMessage on start search returned false")
 	}
 }
