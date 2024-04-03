@@ -2,11 +2,14 @@ package faulttolerantnode
 
 import (
 	bmp "dirs/simulation/pkg/bandwidthManager"
+	idgenerator "dirs/simulation/pkg/idGenerator.go"
 	"sync"
 	"time"
 )
 
 type Node struct {
+	hasFailed bool
+
 	// Store holds key-value pairs
 	store     map[string]string
 	storeLock sync.RWMutex
@@ -25,11 +28,22 @@ type Node struct {
 	// OuterGetterFunctions^
 }
 
-func (n *Node) ReceiveRouteMessage(id int, key string, from *Node) bool {
-	if n.selfAddress != from {
-		_, tunnelLength := n.getTunnel(from)
-		time.Sleep(time.Millisecond * time.Duration(tunnelLength))
+func (n *Node) StartSearch(key string) int {
+	if n.hasFailed {
+		panic("Started search on failed node")
 	}
+	id := idgenerator.GetId()
+
+	n.selfAddress.ReceiveRouteMessage(id, key, n.selfAddress)
+
+	return id
+}
+
+func (n *Node) ReceiveRouteMessage(id int, key string, from *Node) bool {
+	if n.hasFailed {
+		return false
+	}
+	n.waitWayFrom(from)
 
 	n.routeRequestsLock.Lock()
 	defer n.routeRequestsLock.Unlock()
@@ -54,9 +68,10 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from *Node) bool {
 }
 
 func (n *Node) ConfirmRouteMessage(id int, from *Node) bool {
-
-	_, tunnelLength := n.getTunnel(from)
-	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
+	if n.hasFailed {
+		return false
+	}
+	n.waitWayFrom(from)
 
 	n.routeRequestsLock.Lock()
 	defer n.routeRequestsLock.Unlock()
@@ -65,28 +80,42 @@ func (n *Node) ConfirmRouteMessage(id int, from *Node) bool {
 		return false
 	}
 
-	r := n.setRouteForRequest(id, from)
+	r, first := n.setRouteForRequest(id, from)
 
-	if r.from == n.selfAddress {
-		go from.ReceiveDownloadMessage(id, r.key, n.selfAddress)
-	} else {
-		go r.from.ConfirmRouteMessage(id, n.selfAddress)
+	if first {
+		if r.from == n.selfAddress {
+			go from.ReceiveDownloadMessage(id, r.key, n.selfAddress)
+		} else {
+			go r.from.ConfirmRouteMessage(id, n.selfAddress)
+		}
 	}
 
 	return true
 }
 
+func (n *Node) Fail() {
+	if n.hasFailed {
+		return
+	}
+	for _, eachFriend := range n.getNetworkFriends() {
+		eachFriend.ReceiveFaultMessage(n.selfAddress, nil)
+	}
+}
+
 // Nil "about" means that neighbor node failed, otherwise
 // failure was experienced down the route.
 func (n *Node) ReceiveFaultMessage(from *Node, about []int) {
+	if n.hasFailed {
+		return
+	}
 	n.waitWayFrom(from)
 
 	n.routeRequestsLock.Lock()
 	defer n.routeRequestsLock.Unlock()
 
-	if about == nil {
-		disruptedRoutes := []_Request{}
+	disruptedRoutes := []_Request{}
 
+	if about == nil {
 		for _, eachR := range n.findDisruptedDownloads(from) {
 			if recoveredR, ok := n.setAwaitingFromForRequest(eachR.id); ok {
 				go recoveredR.awaitingFrom.ReceiveDownloadMessage(eachR.id, eachR.key, n.selfAddress)
@@ -95,14 +124,60 @@ func (n *Node) ReceiveFaultMessage(from *Node, about []int) {
 			}
 		}
 
-		for _, emptyR := range n.clearFromRoutedTo(from) {
-			
+		disruptedRoutes = append(disruptedRoutes, n.clearFromRoutedTo(from)...)
+	} else {
+		for _, eachR := range n.findDisruptedDownloadsById(from, about) {
+			if recoveredR, ok := n.setAwaitingFromForRequest(eachR.id); ok {
+				go recoveredR.awaitingFrom.ReceiveDownloadMessage(eachR.id, eachR.key, n.selfAddress)
+			} else {
+				disruptedRoutes = append(disruptedRoutes, recoveredR)
+			}
+		}
+
+		disruptedRoutes = append(disruptedRoutes, n.clearFromRoutedToById(from, about)...)
+	}
+
+	for node, ids := range matchFromAndId(disruptedRoutes) {
+		if node != n.selfAddress {
+			go node.ReceiveFaultMessage(n.selfAddress, ids)
+		} else {
+			go n.selfAddress.RetryMessages(ids)
 		}
 	}
 
 }
 
+// Returns new ids for retried messages
+func (n *Node) RetryMessages(ids []int) []int {
+	if n.hasFailed {
+		return nil
+	}
+	newIds := make([]int, len(ids))
+	for i := range ids {
+		newIds[i] = idgenerator.GetId()
+	}
+
+	n.doneMessagesLock.Lock()
+	for _, id := range ids {
+		n.doneMessages[id] = true
+	}
+	n.doneMessagesLock.Unlock()
+
+	n.routeRequestsLock.RLock()
+	defer n.routeRequestsLock.RUnlock()
+
+	rs := n.removeRequests(ids...)
+	for i, eachR := range rs {
+		go n.selfAddress.ReceiveRouteMessage(newIds[i], eachR.key, n.selfAddress)
+	}
+
+	return newIds
+}
+
 func (n *Node) ReceiveDownloadMessage(id int, key string, from *Node) {
+	if n.hasFailed {
+		return
+	}
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
 
@@ -123,6 +198,9 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from *Node) {
 }
 
 func (n *Node) ConfirmDownloadMessage(id int, val string, from *Node) {
+	if n.hasFailed {
+		return
+	}
 	tunnelWidth, tunnelLength := n.getTunnel(from)
 	n.bm.RegisterDownload(len(val), from.Bm(), tunnelWidth, tunnelLength, func(_ int) {
 		n.doneMessagesLock.Lock()
@@ -152,19 +230,21 @@ func (n *Node) GetSelfAddress() *Node {
 	return n.selfAddress
 }
 
-// func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
-// 	n := &Node{
-// 		bm:                bmp.NewBandwidthManager(maxDownload, maxUpload),
-// 		store:             make(map[string]string),
-// 		doneMessages:      make(map[int]bool),
-// 		getNetworkFriends: getNetworkFriends,
-// 		getNetworkTunnel:  getNetworkTunnel,
-// 	}
-// 	n.selfAddress = n
-// 	return n
-// }
+func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []*Node, getNetworkTunnel func(with *Node) (int, int)) *Node {
+	n := &Node{
+		bm:                bmp.NewBandwidthManager(maxDownload, maxUpload),
+		store:             make(map[string]string),
+		doneMessages:      make(map[int]bool),
+		getNetworkFriends: getNetworkFriends,
+		getNetworkTunnel:  getNetworkTunnel,
+		hasFailed:         false,
+	}
+	n.selfAddress = n
+	return n
+}
 
-// func (n *Node) SetOuterFunctions(getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
-// 	n.getNetworkFriends = getNetworkFriends
-// 	n.getNetworkTunnel = getNetworkTunnel
-// 	return n
+func (n *Node) SetOuterFunctions(getNetworkFriends func() []*Node, getNetworkTunnel func(with *Node) (int, int)) *Node {
+	n.getNetworkFriends = getNetworkFriends
+	n.getNetworkTunnel = getNetworkTunnel
+	return n
+}
