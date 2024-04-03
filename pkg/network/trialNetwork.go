@@ -1,9 +1,5 @@
 package network
 
-import (
-	"time"
-)
-
 type SearchRequest struct {
 	Id  int
 	Val string
@@ -20,13 +16,14 @@ type TrialNetwork struct {
 
 var idCounter int = 0
 
-func (tn *TrialNetwork) GenerateTasks(reqGen func() SearchRequest, intervalGen func() time.Duration, timer time.Duration) {
+func (tn *TrialNetwork) WaitToFinishAllSearchers() {
+	for _, each := range tn.nodes {
+		each.WaitToFinishAllSearches()
+	}
+}
 
-	start := time.Now()
-
-	for time.Since(start) < timer {
-		req := reqGen()
-
+func (tn *TrialNetwork) RunRequests(reqs []SearchRequest) {
+	for _, req := range reqs {
 		searchers, havers := devideSearchersAndHavers(len(tn.nodes), req)
 
 		for _, each := range havers {
@@ -35,11 +32,8 @@ func (tn *TrialNetwork) GenerateTasks(reqGen func() SearchRequest, intervalGen f
 
 		for _, each := range searchers {
 			go tn.Get(each).StartSearch(idCounter, req.Key)
-			// go tn.Get(each).ReceiveRouteMessage(idCounter, req.Key, tn.Get(each))
 			idCounter++
 		}
-
-		time.Sleep(intervalGen())
 	}
 }
 
