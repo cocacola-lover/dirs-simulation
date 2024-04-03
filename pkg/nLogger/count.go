@@ -16,6 +16,12 @@ func countMapArr(store map[node.INode][]node.INode) int {
 	return ans
 }
 
+func countMapArrWithLock(store map[node.INode][]node.INode, lock *sync.Mutex) int {
+	lock.Lock()
+	defer lock.Unlock()
+	return countMapArr(store)
+}
+
 func countMapMapArrWithLock(store map[int]map[node.INode][]node.INode, lock *sync.Mutex) int {
 	lock.Lock()
 	defer lock.Unlock()
@@ -73,4 +79,45 @@ func (l *Logger) DurationToArriveLocked(id int) (time.Duration, bool) {
 	}
 
 	return arr[1].Sub(arr[0]), true
+}
+
+func (l *Logger) AverageDurationToArriveLocked() (time.Duration, int) {
+	l.setLock.Lock()
+	defer l.setLock.Unlock()
+
+	var durSum time.Duration = 0
+	didntReach := 0
+
+	for _, arr := range l.seTimestamps {
+		if arr[1].IsZero() {
+			didntReach += 1
+		} else {
+			durSum += arr[1].Sub(arr[0])
+		}
+	}
+
+	return durSum / time.Duration(len(l.seTimestamps)), didntReach
+}
+
+func (l *Logger) AverageRouteMessageReceives() float64 {
+	return float64(l.CountRouteMessageReceives()) / float64(len(l.routeMessageReceives))
+}
+func (l *Logger) AverageRouteMessageTimeouts() float64 {
+	return float64(l.CountRouteMessageTimeouts()) / float64(len(l.routeMessageTimeouts))
+}
+func (l *Logger) AverageRouteMessageConfirms() float64 {
+	return float64(l.CountRouteMessageConfirms()) / float64(len(l.routeMessageConfirms))
+}
+func (l *Logger) AverageDeclinedRouteMessageReceives() float64 {
+	return float64(l.CountDeclinedRouteMessageReceives()) / float64(len(l.deniedRouteMessageReceives))
+}
+func (l *Logger) AverageDeclinedRouteMessageTimeouts() float64 {
+	return float64(l.CountDeclinedRouteMessageTimeouts()) / float64(len(l.deniedRouteMessageTimeouts))
+}
+func (l *Logger) AverageDeclinedRouteMessageConfirms() float64 {
+	return float64(l.CountDeclinedRouteMessageConfirms()) / float64(len(l.deniedRouteMessageConfirms))
+}
+
+func (l *Logger) AverageDownloadMessages() float64 {
+	return float64(l.CountDownloadMessages()) / float64(len(l.downloadMessages))
 }

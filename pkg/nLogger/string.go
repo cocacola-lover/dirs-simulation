@@ -8,37 +8,32 @@ import (
 func (l *Logger) StringById(id int) string {
 	ans := fmt.Sprintf("For track #%d :\n", id)
 
-	l.rmrLock.Lock()
-	l.rmrdLock.Lock()
 	ans += fmt.Sprintf(
 		"Have %d message receives and %d receives-rejectes\n",
-		countMapArr(l.routeMessageReceives[id]),
-		countMapArr(l.deniedRouteMessageReceives[id]),
+		countMapArrWithLock(l.routeMessageReceives[id], &l.rmrLock),
+		countMapArrWithLock(l.deniedRouteMessageReceives[id], &l.rmrdLock),
 	)
-	l.rmrdLock.Unlock()
-	l.rmrLock.Unlock()
 
-	l.rmcLock.Lock()
-	l.rmcdLock.Lock()
 	ans += fmt.Sprintf(
 		"Have %d message confirms and %d confirms-rejectes\n",
-		countMapArr(l.routeMessageConfirms[id]),
-		countMapArr(l.deniedRouteMessageConfirms[id]),
+		countMapArrWithLock(l.routeMessageConfirms[id], &l.rmcLock),
+		countMapArrWithLock(l.deniedRouteMessageConfirms[id], &l.rmcdLock),
 	)
-	l.rmcdLock.Unlock()
-	l.rmcLock.Unlock()
 
-	l.rmtLock.Lock()
-	l.rmtdLock.Lock()
 	ans += fmt.Sprintf(
 		"Have %d message timeouts and %d timeouts-rejectes\n",
-		countMapArr(l.routeMessageTimeouts[id]),
-		countMapArr(l.deniedRouteMessageTimeouts[id]),
+		countMapArrWithLock(l.routeMessageTimeouts[id], &l.rmtLock),
+		countMapArrWithLock(l.deniedRouteMessageTimeouts[id], &l.rmtdLock),
 	)
-	l.rmtdLock.Unlock()
-	l.rmtLock.Unlock()
 
 	ans += fmt.Sprintf("The download root was of length - %d\n", len(l.downloadMessages[id]))
+
+	dur, ok := l.DurationToArriveLocked(id)
+	if ok {
+		ans += fmt.Sprintf("The download took %v\n", dur)
+	} else {
+		ans += "WARNING : message never reached root"
+	}
 
 	return ans
 }
@@ -100,7 +95,7 @@ func (l *Logger) StringByIdVerbose(id int, lead np.INode, phoneBook map[np.INode
 	return ans
 }
 
-func (l *Logger) String() string {
+func (l *Logger) StringByIdForEach() string {
 	ans := ""
 
 	l.dLock.Lock()
@@ -112,6 +107,39 @@ func (l *Logger) String() string {
 
 	for key := range keys {
 		ans += l.StringById(key)
+	}
+
+	return ans
+}
+
+func (l *Logger) String() string {
+
+	ans := "Summary of the experiment :\n"
+
+	ans += fmt.Sprintf(
+		"Have %v average message receives and %v average receives-rejectes\n",
+		l.AverageRouteMessageReceives(),
+		l.AverageDeclinedRouteMessageReceives(),
+	)
+
+	ans += fmt.Sprintf(
+		"Have %v average message confirms and %v average confirms-rejectes\n",
+		l.AverageRouteMessageConfirms(),
+		l.AverageDeclinedRouteMessageConfirms(),
+	)
+
+	ans += fmt.Sprintf(
+		"Have %v average message timeouts and %v average timeouts-rejectes\n",
+		l.AverageRouteMessageTimeouts(),
+		l.AverageDeclinedRouteMessageTimeouts(),
+	)
+
+	ans += fmt.Sprintf("The average download root was of length - %v\n", l.AverageDownloadMessages())
+
+	dur, didntReach := l.AverageDurationToArriveLocked()
+	ans += fmt.Sprintf("The average download took %v\n", dur)
+	if didntReach != 0 {
+		ans += fmt.Sprintf("WARNING : %d message never reached root\n", didntReach)
 	}
 
 	return ans
