@@ -39,17 +39,17 @@ func (ln *LoggerNode) ConfirmRouteMessage(id int, from node.INode) bool {
 	return hasAccepted
 }
 
-func (ln *LoggerNode) TimeoutRouteMessage(id int, from node.INode) bool {
-	hasAccepted := ln.INode.TimeoutRouteMessage(id, from)
+// func (ln *LoggerNode) TimeoutRouteMessage(id int, from node.INode) bool {
+// 	hasAccepted := ln.INode.TimeoutRouteMessage(id, from)
 
-	if hasAccepted {
-		go ln.logger.AddRouteMessageTimeout(id, from, ln)
-	} else {
-		go ln.logger.AddDeniedRouteMessageTimeout(id, from, ln)
-	}
+// 	if hasAccepted {
+// 		go ln.logger.AddRouteMessageTimeout(id, from, ln)
+// 	} else {
+// 		go ln.logger.AddDeniedRouteMessageTimeout(id, from, ln)
+// 	}
 
-	return hasAccepted
-}
+// 	return hasAccepted
+// }
 
 func (ln *LoggerNode) ReceiveDownloadMessage(id int, key string, from node.INode) {
 	ln.INode.ReceiveDownloadMessage(id, key, from)
@@ -60,14 +60,18 @@ func (ln *LoggerNode) ConfirmDownloadMessage(id int, val string, from node.INode
 	go ln.logger.AddDownloadMessage(id, from)
 }
 
-func (ln *LoggerNode) StartSearch(id int, key string) {
+func (ln *LoggerNode) StartSearchAndWatch(key string) int {
+
 	ch := make(chan bool)
+	id := ln.SearcherNode.StartSearchAndWatch(key, ch)
+
 	ln.searchesLock.Lock()
 	ln.searches[id] = ch
 	ln.searchesLock.Unlock()
 
 	ln.logger.StartSearch(id)
-	ln.SearcherNode.StartSearch(id, key, ch)
+
+	return id
 }
 
 func (ln *LoggerNode) PutVal(key, val string) {
