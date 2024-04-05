@@ -95,7 +95,7 @@ func (n *Node) setRouteForRequest(id int, to INode) (_Request, bool) {
 	for i := 0; i < len(n.routeRequests); i++ {
 		if id == n.routeRequests[i].id {
 			n.routeRequests[i].routedTo = append(n.routeRequests[i].routedTo, to)
-			return n.routeRequests[i], len(n.routeRequests[i].routedTo) == 1
+			return n.routeRequests[i], len(n.routeRequests[i].routedTo) == 1 && n.routeRequests[i].awaitingFrom == nil
 		}
 	}
 	panic("Setting routedTo for message that is not in store")
