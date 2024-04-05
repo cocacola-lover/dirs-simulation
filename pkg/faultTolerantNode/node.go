@@ -4,11 +4,12 @@ import (
 	bmp "dirs/simulation/pkg/bandwidthManager"
 	idgenerator "dirs/simulation/pkg/idGenerator.go"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type Node struct {
-	hasFailed bool
+	hasFailed atomic.Bool
 
 	// Store holds key-value pairs
 	store     map[string]string
@@ -29,7 +30,7 @@ type Node struct {
 }
 
 func (n *Node) StartSearch(key string) int {
-	if n.hasFailed {
+	if n.hasFailed.Load() {
 		panic("Started search on failed node")
 	}
 	id := idgenerator.GetId()
@@ -40,7 +41,7 @@ func (n *Node) StartSearch(key string) int {
 }
 
 func (n *Node) ReceiveRouteMessage(id int, key string, from *Node) bool {
-	if n.hasFailed {
+	if n.hasFailed.Load() {
 		return false
 	}
 	n.waitWayFrom(from)
@@ -68,7 +69,7 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from *Node) bool {
 }
 
 func (n *Node) ConfirmRouteMessage(id int, from *Node) bool {
-	if n.hasFailed {
+	if n.hasFailed.Load() {
 		return false
 	}
 	n.waitWayFrom(from)
@@ -84,6 +85,10 @@ func (n *Node) ConfirmRouteMessage(id int, from *Node) bool {
 
 	if first {
 		if r.from == n.selfAddress {
+			r, ok := n.setAwaitingFromForRequest(r.id)
+			if !ok {
+				panic("Can not set awating on ConfirmRouteMessage")
+			}
 			go from.ReceiveDownloadMessage(id, r.key, n.selfAddress)
 		} else {
 			go r.from.ConfirmRouteMessage(id, n.selfAddress)
@@ -94,18 +99,19 @@ func (n *Node) ConfirmRouteMessage(id int, from *Node) bool {
 }
 
 func (n *Node) Fail() {
-	if n.hasFailed {
+	if n.hasFailed.Load() {
 		return
 	}
+	n.hasFailed.Store(false)
 	for _, eachFriend := range n.getNetworkFriends() {
-		eachFriend.ReceiveFaultMessage(n.selfAddress, nil)
+		go eachFriend.ReceiveFaultMessage(n.selfAddress, nil)
 	}
 }
 
 // Nil "about" means that neighbor node failed, otherwise
 // failure was experienced down the route.
 func (n *Node) ReceiveFaultMessage(from *Node, about []int) {
-	if n.hasFailed {
+	if n.hasFailed.Load() {
 		return
 	}
 	n.waitWayFrom(from)
@@ -149,7 +155,7 @@ func (n *Node) ReceiveFaultMessage(from *Node, about []int) {
 
 // Returns new ids for retried messages
 func (n *Node) RetryMessages(ids []int) []int {
-	if n.hasFailed {
+	if n.hasFailed.Load() {
 		return nil
 	}
 	newIds := make([]int, len(ids))
@@ -175,9 +181,10 @@ func (n *Node) RetryMessages(ids []int) []int {
 }
 
 func (n *Node) ReceiveDownloadMessage(id int, key string, from *Node) {
-	if n.hasFailed {
+	if n.hasFailed.Load() {
 		return
 	}
+
 	_, tunnelLength := n.getTunnel(from)
 	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
 
@@ -198,7 +205,7 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from *Node) {
 }
 
 func (n *Node) ConfirmDownloadMessage(id int, val string, from *Node) {
-	if n.hasFailed {
+	if n.hasFailed.Load() {
 		return
 	}
 	tunnelWidth, tunnelLength := n.getTunnel(from)
@@ -237,7 +244,6 @@ func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []*Node, g
 		doneMessages:      make(map[int]bool),
 		getNetworkFriends: getNetworkFriends,
 		getNetworkTunnel:  getNetworkTunnel,
-		hasFailed:         false,
 	}
 	n.selfAddress = n
 	return n
