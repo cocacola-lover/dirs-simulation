@@ -6,7 +6,6 @@ import (
 )
 
 func TestSearchNode(t *testing.T) {
-	// bn := node.NewNode()
 
 	t.Run("Test simple ReceiveRouteMessage", func(t *testing.T) {
 		node1 := node.NewNode(1, 1, nil, nil)
@@ -24,7 +23,7 @@ func TestSearchNode(t *testing.T) {
 
 		searchNode1 := NewSearchNode(node1)
 		stopCh := make(chan bool)
-		searchNode1.StartSearch(0, "key", stopCh)
+		searchNode1.StartSearchAndWatch("key", stopCh)
 
 		_, ok1 := <-stopCh
 		value, ok := node1.HasKey("key")

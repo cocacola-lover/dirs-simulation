@@ -12,14 +12,12 @@ type SearcherNode struct {
 	searchesLock sync.RWMutex
 }
 
-func (sn *SearcherNode) StartSearch(id int, key string, ch chan bool) {
+func (sn *SearcherNode) StartSearchAndWatch(key string, ch chan bool) int {
 	sn.searchesLock.Lock()
 	sn.searches[key] = ch
 	sn.searchesLock.Unlock()
 
-	if !sn.GetSelfAddress().ReceiveRouteMessage(id, key, sn.GetSelfAddress()) {
-		panic("ReceiveRouteMessage on start search returned false")
-	}
+	return sn.GetSelfAddress().StartSearch(key)
 }
 
 func (sn *SearcherNode) PutVal(key, val string) {
