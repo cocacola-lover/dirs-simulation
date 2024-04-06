@@ -51,6 +51,6 @@ func (net Network) String() string {
 	return str
 }
 
-func (net Network) LoggerStringById(id int, lead *lnp.LoggerNode) string {
-	return net.Logger.StringByIdVerbose(id, lead, net.phoneBook)
+func (net Network) LoggerStringById(id int) string {
+	return net.Logger.StringByIdVerbose(id, net.phoneBook)
 }

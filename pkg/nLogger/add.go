@@ -23,8 +23,8 @@ func (l *Logger) AddRouteMessageReceive(id int, from node.INode, to node.INode) 
 	addToMapMapArrWithLock(id, from, to, l.routeMessageReceives, &l.rmrLock)
 }
 
-func (l *Logger) AddRouteMessageTimeout(id int, from node.INode, to node.INode) {
-	addToMapMapArrWithLock(id, from, to, l.routeMessageTimeouts, &l.rmtLock)
+func (l *Logger) AddFaultMessageReceive(id int, from node.INode, to node.INode) {
+	addToMapMapArrWithLock(id, from, to, l.faultMessageReceives, &l.fmrLock)
 }
 
 func (l *Logger) AddRouteMessageConfirm(id int, from node.INode, to node.INode) {
@@ -33,22 +33,24 @@ func (l *Logger) AddRouteMessageConfirm(id int, from node.INode, to node.INode) 
 func (l *Logger) AddDeniedRouteMessageReceive(id int, from node.INode, to node.INode) {
 	addToMapMapArrWithLock(id, from, to, l.deniedRouteMessageReceives, &l.rmrdLock)
 }
-func (l *Logger) AddDeniedRouteMessageTimeout(id int, from node.INode, to node.INode) {
-	addToMapMapArrWithLock(id, from, to, l.deniedRouteMessageTimeouts, &l.rmtdLock)
-}
 func (l *Logger) AddDeniedRouteMessageConfirm(id int, from node.INode, to node.INode) {
 	addToMapMapArrWithLock(id, from, to, l.deniedRouteMessageConfirms, &l.rmcdLock)
 }
 
-func (l *Logger) AddDownloadMessage(id int, from node.INode) {
+func (l *Logger) AddDownloadMessage(id int, from node.INode, to node.INode) {
 	l.dLock.Lock()
 	defer l.dLock.Unlock()
 
-	l.downloadMessages[id] = append(l.downloadMessages[id], from)
+	_, ok := l.downloadMessages[id]
+	if !ok {
+		l.downloadMessages[id] = make(map[node.INode]node.INode)
+	}
+
+	l.downloadMessages[id][to] = from
 }
 
 // Should be used synchronously
-func (l *Logger) StartSearch(id int) {
+func (l *Logger) StartSearch(id int, n node.INode) {
 	timestamp := make([]time.Time, 2)
 	timestamp[0] = time.Now()
 
@@ -56,6 +58,10 @@ func (l *Logger) StartSearch(id int) {
 		l.setLock.Lock()
 		l.seTimestamps[id] = timestamp
 		l.setLock.Unlock()
+
+		l.dLock.Lock()
+		l.startedSearches[id] = n
+		l.dLock.Unlock()
 	}()
 }
 

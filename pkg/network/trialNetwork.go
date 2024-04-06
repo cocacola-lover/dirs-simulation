@@ -14,8 +14,6 @@ type TrialNetwork struct {
 	*Network
 }
 
-var idCounter int = 0
-
 func (tn *TrialNetwork) WaitToFinishAllSearchers() {
 	for _, each := range tn.nodes {
 		each.WaitToFinishAllSearches()
@@ -31,14 +29,17 @@ func (tn *TrialNetwork) RunRequests(reqs []SearchRequest) {
 		}
 
 		for _, each := range searchers {
-			go tn.Get(each).StartSearch(idCounter, req.Key)
-			idCounter++
+			go tn.Get(each).StartSearchAndWatch(req.Key)
 		}
 	}
 }
 
 func (tn *TrialNetwork) String() string {
 	return tn.Logger.String()
+}
+
+func (tn *TrialNetwork) StringVerbose() string {
+	return tn.Logger.StringByIdForEachVerbose(tn.phoneBook)
 }
 
 func NewTrialNetwork(net *Network) *TrialNetwork {

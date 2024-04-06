@@ -21,12 +21,15 @@ func (l *Logger) StringById(id int) string {
 	)
 
 	ans += fmt.Sprintf(
-		"Have %d message timeouts and %d timeouts-rejectes\n",
-		countMapArrWithLock(l.routeMessageTimeouts[id], &l.rmtLock),
-		countMapArrWithLock(l.deniedRouteMessageTimeouts[id], &l.rmtdLock),
+		"Have %d fault message receives\n",
+		countMapArrWithLock(l.faultMessageReceives[id], &l.fmrLock),
 	)
 
-	ans += fmt.Sprintf("The download root was of length - %d\n", len(l.downloadMessages[id]))
+	ans += fmt.Sprintf(
+		"The download root was of length - %d, but had %d downloads\n",
+		l.CountDownloadPath(id),
+		len(l.downloadMessages[id]),
+	)
 
 	dur, ok := l.DurationToArriveLocked(id)
 	if ok {
@@ -38,8 +41,15 @@ func (l *Logger) StringById(id int) string {
 	return ans
 }
 
-func (l *Logger) StringByIdVerbose(id int, lead np.INode, phoneBook map[np.INode]int) string {
+func (l *Logger) StringByIdVerbose(id int, phoneBook map[np.INode]int) string {
 	ans := fmt.Sprintf("For track #%d :\n", id)
+
+	l.dLock.Lock()
+	lead, ok := l.startedSearches[id]
+	if !ok {
+		panic("Lead for search does not exist")
+	}
+	l.dLock.Unlock()
 
 	l.rmrLock.Lock()
 	l.rmrdLock.Lock()
@@ -73,15 +83,10 @@ func (l *Logger) StringByIdVerbose(id int, lead np.INode, phoneBook map[np.INode
 	l.rmcdLock.Unlock()
 	l.rmcLock.Unlock()
 
-	l.rmtLock.Lock()
-	l.rmtdLock.Lock()
 	ans += fmt.Sprintf(
-		"Have %d message timeouts and %d timeouts-rejectes\n",
-		countMapArr(l.routeMessageTimeouts[id]),
-		countMapArr(l.deniedRouteMessageTimeouts[id]),
+		"Have %d fault message receives\n",
+		countMapArrWithLock(l.faultMessageReceives[id], &l.fmrLock),
 	)
-	l.rmtdLock.Unlock()
-	l.rmtLock.Unlock()
 
 	l.dLock.Lock()
 	ans += fmt.Sprintf("The download root was of length - %d\n", len(l.downloadMessages[id]))
@@ -90,7 +95,14 @@ func (l *Logger) StringByIdVerbose(id int, lead np.INode, phoneBook map[np.INode
 	}
 	l.dLock.Unlock()
 
-	ans += fmt.Sprint(phoneBook[lead])
+	ans += fmt.Sprintf("%v\n", phoneBook[lead])
+
+	dur, ok := l.DurationToArriveLocked(id)
+	if ok {
+		ans += fmt.Sprintf("The download took %v\n", dur)
+	} else {
+		ans += "WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!! : message never reached root\n\n\n"
+	}
 
 	return ans
 }
@@ -107,6 +119,23 @@ func (l *Logger) StringByIdForEach() string {
 
 	for key := range keys {
 		ans += l.StringById(key)
+	}
+
+	return ans
+}
+
+func (l *Logger) StringByIdForEachVerbose(phoneBook map[np.INode]int) string {
+	ans := ""
+
+	l.dLock.Lock()
+	keys := []int{}
+	for key := range l.downloadMessages {
+		keys = append(keys, key)
+	}
+	l.dLock.Unlock()
+
+	for key := range keys {
+		ans += l.StringByIdVerbose(key, phoneBook)
 	}
 
 	return ans
@@ -129,12 +158,15 @@ func (l *Logger) String() string {
 	)
 
 	ans += fmt.Sprintf(
-		"Have %v average message timeouts and %v average timeouts-rejectes\n",
-		l.AverageRouteMessageTimeouts(),
-		l.AverageDeclinedRouteMessageTimeouts(),
+		"Have %v average fault message receives\n",
+		l.AverageFaultMessageReceives(),
 	)
 
-	ans += fmt.Sprintf("The average download root was of length - %v\n", l.AverageDownloadMessages())
+	ans += fmt.Sprintf(
+		"The average download root was of length - %v, but average download messages - %v\n",
+		l.AverageDownloadPath(),
+		l.AverageDownloadMessages(),
+	)
 
 	dur, didntReach := l.AverageDurationToArriveLocked()
 	ans += fmt.Sprintf("The average download took %v\n", dur)

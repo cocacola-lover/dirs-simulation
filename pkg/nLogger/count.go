@@ -37,8 +37,8 @@ func countMapMapArrWithLock(store map[int]map[node.INode][]node.INode, lock *syn
 func (l *Logger) CountRouteMessageReceives() int {
 	return countMapMapArrWithLock(l.routeMessageReceives, &l.rmrLock)
 }
-func (l *Logger) CountRouteMessageTimeouts() int {
-	return countMapMapArrWithLock(l.routeMessageTimeouts, &l.rmtLock)
+func (l *Logger) CountFaultMessageReceives() int {
+	return countMapMapArrWithLock(l.faultMessageReceives, &l.fmrLock)
 }
 func (l *Logger) CountRouteMessageConfirms() int {
 	return countMapMapArrWithLock(l.routeMessageConfirms, &l.rmcLock)
@@ -46,9 +46,7 @@ func (l *Logger) CountRouteMessageConfirms() int {
 func (l *Logger) CountDeclinedRouteMessageReceives() int {
 	return countMapMapArrWithLock(l.deniedRouteMessageReceives, &l.rmrdLock)
 }
-func (l *Logger) CountDeclinedRouteMessageTimeouts() int {
-	return countMapMapArrWithLock(l.deniedRouteMessageTimeouts, &l.rmtdLock)
-}
+
 func (l *Logger) CountDeclinedRouteMessageConfirms() int {
 	return countMapMapArrWithLock(l.deniedRouteMessageConfirms, &l.rmcdLock)
 }
@@ -63,6 +61,34 @@ func (l *Logger) CountDownloadMessages() int {
 	}
 
 	return ans
+}
+
+func (l *Logger) countDownloadPathWithoutLock(id int) int {
+	lead, ok1 := l.startedSearches[id]
+	dict, ok2 := l.downloadMessages[id]
+	if !ok1 || !ok2 {
+		panic("Counting download path of nonexistent download")
+	}
+
+	ans := []node.INode{lead}
+
+	for i := 0; true; i++ {
+		next, ok := dict[ans[i]]
+		if !ok {
+			break
+		}
+
+		ans = append(ans, next)
+	}
+
+	return len(ans) - 1
+}
+
+func (l *Logger) CountDownloadPath(id int) int {
+	l.dLock.Lock()
+	defer l.dLock.Unlock()
+
+	return l.countDownloadPathWithoutLock(id)
 }
 
 func (l *Logger) DurationToArriveLocked(id int) (time.Duration, bool) {
@@ -102,8 +128,8 @@ func (l *Logger) AverageDurationToArriveLocked() (time.Duration, int) {
 func (l *Logger) AverageRouteMessageReceives() float64 {
 	return float64(l.CountRouteMessageReceives()) / float64(len(l.routeMessageReceives))
 }
-func (l *Logger) AverageRouteMessageTimeouts() float64 {
-	return float64(l.CountRouteMessageTimeouts()) / float64(len(l.routeMessageTimeouts))
+func (l *Logger) AverageFaultMessageReceives() float64 {
+	return float64(l.CountFaultMessageReceives()) / float64(len(l.faultMessageReceives))
 }
 func (l *Logger) AverageRouteMessageConfirms() float64 {
 	return float64(l.CountRouteMessageConfirms()) / float64(len(l.routeMessageConfirms))
@@ -111,13 +137,22 @@ func (l *Logger) AverageRouteMessageConfirms() float64 {
 func (l *Logger) AverageDeclinedRouteMessageReceives() float64 {
 	return float64(l.CountDeclinedRouteMessageReceives()) / float64(len(l.deniedRouteMessageReceives))
 }
-func (l *Logger) AverageDeclinedRouteMessageTimeouts() float64 {
-	return float64(l.CountDeclinedRouteMessageTimeouts()) / float64(len(l.deniedRouteMessageTimeouts))
-}
 func (l *Logger) AverageDeclinedRouteMessageConfirms() float64 {
 	return float64(l.CountDeclinedRouteMessageConfirms()) / float64(len(l.deniedRouteMessageConfirms))
 }
 
 func (l *Logger) AverageDownloadMessages() float64 {
 	return float64(l.CountDownloadMessages()) / float64(len(l.downloadMessages))
+}
+
+func (l *Logger) AverageDownloadPath() float64 {
+	l.dLock.Lock()
+	defer l.dLock.Unlock()
+
+	sum := 0
+	for id := range l.downloadMessages {
+		sum += l.countDownloadPathWithoutLock(id)
+	}
+
+	return float64(sum) / float64(len(l.downloadMessages))
 }

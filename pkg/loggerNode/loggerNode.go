@@ -39,25 +39,13 @@ func (ln *LoggerNode) ConfirmRouteMessage(id int, from node.INode) bool {
 	return hasAccepted
 }
 
-// func (ln *LoggerNode) TimeoutRouteMessage(id int, from node.INode) bool {
-// 	hasAccepted := ln.INode.TimeoutRouteMessage(id, from)
-
-// 	if hasAccepted {
-// 		go ln.logger.AddRouteMessageTimeout(id, from, ln)
-// 	} else {
-// 		go ln.logger.AddDeniedRouteMessageTimeout(id, from, ln)
-// 	}
-
-// 	return hasAccepted
-// }
-
 func (ln *LoggerNode) ReceiveDownloadMessage(id int, key string, from node.INode) {
 	ln.INode.ReceiveDownloadMessage(id, key, from)
 }
 
 func (ln *LoggerNode) ConfirmDownloadMessage(id int, val string, from node.INode) {
 	ln.INode.ConfirmDownloadMessage(id, val, from)
-	go ln.logger.AddDownloadMessage(id, from)
+	go ln.logger.AddDownloadMessage(id, from, ln.GetSelfAddress())
 }
 
 func (ln *LoggerNode) StartSearchAndWatch(key string) int {
@@ -69,7 +57,7 @@ func (ln *LoggerNode) StartSearchAndWatch(key string) int {
 	ln.searches[id] = ch
 	ln.searchesLock.Unlock()
 
-	ln.logger.StartSearch(id)
+	ln.logger.StartSearch(id, ln.GetSelfAddress())
 
 	return id
 }
