@@ -9,11 +9,22 @@ import (
 	searchernode "dirs/simulation/pkg/searcherNode"
 )
 
-func _NewWithoutGraphNetwork(initNode func(net *Network, i int) *lnp.LoggerNode, size int) *Network {
-	net := Network{
-		nodes:     make([]*lnp.LoggerNode, size),
-		phoneBook: make(map[np.INode]int),
-		Logger:    lp.NewLogger(),
+func _NewWithoutGraphNetwork(initNode func(net *Network, i int) *lnp.LoggerNode, size int, logger *lp.Logger) *Network {
+
+	var net Network
+
+	if logger != nil {
+		net = Network{
+			nodes:     make([]*lnp.LoggerNode, size),
+			phoneBook: make(map[np.INode]int),
+			Logger:    logger,
+		}
+	} else {
+		net = Network{
+			nodes:     make([]*lnp.LoggerNode, size),
+			phoneBook: make(map[np.INode]int),
+			Logger:    lp.NewLogger(),
+		}
 	}
 
 	for i := 0; i < size; i++ {
@@ -24,17 +35,17 @@ func _NewWithoutGraphNetwork(initNode func(net *Network, i int) *lnp.LoggerNode,
 	return &net
 }
 
-func NewEmptyNetwork(initNode func(net *Network, i int) *lnp.LoggerNode, size int) *Network {
-	network := _NewWithoutGraphNetwork(initNode, size)
+func NewEmptyNetwork(initNode func(net *Network, i int) *lnp.LoggerNode, size int, logger *lp.Logger) *Network {
+	network := _NewWithoutGraphNetwork(initNode, size, logger)
 
 	network.Graph = gp.NewGraph[Tunnel](size)
 
 	return network
 }
 
-func NewRandomNetwork(initNode func(net *Network, i int) *lnp.LoggerNode, size int, degree int) *Network {
+func NewRandomNetwork(initNode func(net *Network, i int) *lnp.LoggerNode, size int, degree int, logger *lp.Logger) *Network {
 
-	network := _NewWithoutGraphNetwork(initNode, size)
+	network := _NewWithoutGraphNetwork(initNode, size, logger)
 
 	network.Graph = gp.NewRandomConnectedGraph[Tunnel](size, degree, func() Tunnel {
 		return Tunnel{Width: crp.Rand.Intn(10) + 1, Length: crp.Rand.Intn(10) + 1}
@@ -44,7 +55,7 @@ func NewRandomNetwork(initNode func(net *Network, i int) *lnp.LoggerNode, size i
 }
 
 // Test Network that is populated entirely by base nodes.
-func NewBaseNetwork(size, degree int) *Network {
+func NewBaseNetwork(size, degree int, logger *lp.Logger) *Network {
 	return NewRandomNetwork(func(net *Network, i int) *lnp.LoggerNode {
 		bn := np.NewNode(
 			crp.Rand.Intn(10)+1,
@@ -63,5 +74,5 @@ func NewBaseNetwork(size, degree int) *Network {
 		)
 
 		return n
-	}, size, degree)
+	}, size, degree, logger)
 }
