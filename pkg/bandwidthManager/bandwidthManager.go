@@ -4,6 +4,7 @@ import (
 	usp "dirs/simulation/pkg/urgencyScheduler"
 	"dirs/simulation/pkg/utils"
 	"sync"
+	"time"
 )
 
 type BandwidthManager struct {
@@ -15,11 +16,31 @@ type BandwidthManager struct {
 	downloadTasks     []_Task
 	downloadTasksLock sync.Mutex
 
-	scheduler *usp.UrgencyScheduler
+	schedulerLock sync.Mutex
+	scheduler     *usp.UrgencyScheduler
 }
 
 func (bm *BandwidthManager) Close() {
+	bm.schedulerLock.Lock()
+	defer bm.schedulerLock.Unlock()
+
 	bm.scheduler.Close()
+}
+
+func (bm *BandwidthManager) IsClosed() bool {
+	bm.schedulerLock.Lock()
+	defer bm.schedulerLock.Unlock()
+
+	return bm.scheduler.IsClosed()
+}
+
+func (bm *BandwidthManager) ifNotClosedSchedule(timer time.Duration) {
+	bm.schedulerLock.Lock()
+	defer bm.schedulerLock.Unlock()
+
+	if !bm.scheduler.IsClosed() {
+		bm.scheduler.Schedule(timer)
+	}
 }
 
 // Use with go
@@ -28,7 +49,7 @@ func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, t
 
 	go utils.WithLockedNoResult(&bm.downloadTasksLock, func() {
 		bm.downloadTasks = append(bm.downloadTasks, newTask)
-		bm.scheduler.Schedule(0)
+		bm.ifNotClosedSchedule(0)
 	})
 
 	return int(newTask.id)
@@ -43,7 +64,7 @@ func (bm *BandwidthManager) DropDownload(id int) {
 				return
 			}
 		}
-		bm.scheduler.Schedule(0)
+		bm.ifNotClosedSchedule(0)
 	})
 }
 
@@ -101,7 +122,7 @@ func (bm *BandwidthManager) _Reevaluate() {
 			soonestToEnd = min(newValue, soonestToEnd)
 		}
 
-		bm._ScheduleReevaluation(soonestToEnd)
+		bm.ifNotClosedSchedule(soonestToEnd)
 	})
 }
 

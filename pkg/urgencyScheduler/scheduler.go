@@ -8,9 +8,11 @@ import (
 // UrgencyScheduler does not work with the last time given
 // but rather with the soonest time given
 type UrgencyScheduler struct {
-	timedFu        func()
-	activationChan chan int32
-	innerTimer     int32
+	timedFu    func()
+	innerTimer int32
+
+	activationChan  chan int32
+	timeToCloseChan chan bool
 }
 
 func (s *UrgencyScheduler) InnerTimer() int32 {
@@ -22,14 +24,14 @@ func (s *UrgencyScheduler) AddInnerTime() {
 
 func (s *UrgencyScheduler) _Watch() {
 	for {
-		timer, ok := <-s.activationChan
-		if !ok {
+		select {
+		case timer := <-s.activationChan:
+			if s.InnerTimer() == timer {
+				s.AddInnerTime()
+				go s.timedFu()
+			}
+		case <-s.timeToCloseChan:
 			return
-		}
-
-		if s.InnerTimer() == timer {
-			s.AddInnerTime()
-			go s.timedFu()
 		}
 	}
 }
@@ -38,16 +40,32 @@ func (s *UrgencyScheduler) Schedule(duration time.Duration) {
 	go (func() {
 		innerTimer := s.InnerTimer()
 		time.Sleep(duration)
-		s.activationChan <- innerTimer
+
+		if !s.IsClosed() {
+			s.activationChan <- innerTimer
+		}
 	})()
 }
 
+func (s *UrgencyScheduler) IsClosed() bool {
+	select {
+	case <-s.timeToCloseChan:
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *UrgencyScheduler) Close() {
-	close(s.activationChan)
+	close(s.timeToCloseChan)
 }
 
 func NewUrgencyScheduler(timedFu func()) *UrgencyScheduler {
-	ans := UrgencyScheduler{timedFu: timedFu, activationChan: make(chan int32)}
+	ans := UrgencyScheduler{
+		timedFu:         timedFu,
+		activationChan:  make(chan int32),
+		timeToCloseChan: make(chan bool),
+	}
 
 	go ans._Watch()
 

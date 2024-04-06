@@ -97,6 +97,15 @@ func (ln *LoggerNode) WaitToFinishAllSearches() {
 	}
 }
 
+func (ln *LoggerNode) Close() {
+	ln.SearcherNode.Close()
+
+	ln.searchesLock.Lock()
+	defer ln.searchesLock.Unlock()
+
+	ln.searches = nil
+}
+
 func NewLoggerNode(node *snp.SearcherNode, logger *lp.Logger) *LoggerNode {
 	ln := &LoggerNode{SearcherNode: node, logger: logger, searches: make(map[int]chan bool)}
 	ln.SetSelfAddress(ln)

@@ -238,6 +238,7 @@ func (n *Node) GetSelfAddress() INode {
 }
 
 func (n *Node) Close() {
+	n.hasFailed.Store(true)
 	n.Bm().Close()
 }
 

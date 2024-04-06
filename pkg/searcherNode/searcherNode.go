@@ -23,13 +23,27 @@ func (sn *SearcherNode) StartSearchAndWatch(key string, ch chan bool) int {
 func (sn *SearcherNode) PutVal(key, val string) {
 	sn.INode.PutVal(key, val)
 
-	sn.searchesLock.RLock()
+	sn.searchesLock.Lock()
+	defer sn.searchesLock.Unlock()
+
 	v, ok := sn.searches[key]
-	if !ok {
-		panic("Don't have a channel to close in PutVal")
+
+	if ok {
+		delete(sn.searches, key)
+		close(v)
 	}
-	close(v)
-	sn.searchesLock.RUnlock()
+}
+
+func (sn *SearcherNode) Close() {
+	sn.INode.Close()
+
+	sn.searchesLock.Lock()
+	defer sn.searchesLock.Unlock()
+
+	for key, ch := range sn.searches {
+		close(ch)
+		delete(sn.searches, key)
+	}
 }
 
 func NewSearchNode(bn node.INode) *SearcherNode {
