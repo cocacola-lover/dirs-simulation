@@ -41,7 +41,7 @@ func TestBandwidthManager(t *testing.T) {
 			}
 		})
 
-		time.Sleep(15 * time.Millisecond)
+		time.Sleep(30 * time.Millisecond)
 	})
 
 	t.Run("Simple test, 0 tunnel length", func(t *testing.T) {
@@ -60,7 +60,7 @@ func TestBandwidthManager(t *testing.T) {
 			}
 		})
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(30 * time.Millisecond)
 	})
 
 	t.Run("Simple test, 1 speed", func(t *testing.T) {
