@@ -1,27 +1,52 @@
 package main
 
 import (
+	nlogger "dirs/simulation/pkg/nLogger"
 	netp "dirs/simulation/pkg/network"
 	"fmt"
 	"time"
 )
 
-func main() {
+func runExperiment(logger *nlogger.Logger) {
+	n := 400
 
-	id := 0
-	n := 100
-
-	trialNet := netp.NewTrialNetwork(netp.NewBaseNetwork(n, 4))
+	trialNet := netp.NewTrialNetwork(netp.NewBaseNetwork(n, 3, logger))
 
 	trialNet.RunRequests([]netp.SearchRequest{{
-		Id:                id,
-		Key:               fmt.Sprint(id),
-		Val:               "value",
-		Popularity:        0.01,
-		NumberOfSearchers: 5,
+		Id:                0,
+		Key:               fmt.Sprint(0),
+		Val:               "val",
+		Popularity:        0.05,
+		NumberOfSearchers: 8,
 	}})
+	time.Sleep(time.Millisecond * 10)
 
-	time.Sleep(time.Second * 2)
+	trialNet.WaitToFinishAllSearchers()
+	trialNet.Close()
+}
 
-	fmt.Print(trialNet)
+func main() {
+
+	// n := 1000
+
+	logger := nlogger.NewLogger()
+
+	for i := 0; i < 20; i++ {
+		runExperiment(logger)
+	}
+
+	// trialNet := netp.NewTrialNetwork(netp.NewBaseNetwork(n, 4, logger))
+
+	// trialNet.RunRequests([]netp.SearchRequest{{
+	// 	Id:                0,
+	// 	Key:               fmt.Sprint(0),
+	// 	Val:               "val",
+	// 	Popularity:        0.01,
+	// 	NumberOfSearchers: n / 20,
+	// }})
+	// time.Sleep(time.Millisecond * 10)
+
+	// trialNet.WaitToFinishAllSearchers()
+
+	fmt.Print(logger.String())
 }
