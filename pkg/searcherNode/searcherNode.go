@@ -24,7 +24,11 @@ func (sn *SearcherNode) PutVal(key, val string) {
 	sn.INode.PutVal(key, val)
 
 	sn.searchesLock.RLock()
-	close(sn.searches[key])
+	v, ok := sn.searches[key]
+	if !ok {
+		panic("Don't have a channel to close in PutVal")
+	}
+	close(v)
 	sn.searchesLock.RUnlock()
 }
 
