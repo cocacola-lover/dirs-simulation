@@ -56,7 +56,7 @@ func (t *_Task) SetSpeed(absPerMs int) {
 // Returns not ok, if download speed at zero
 func (t _Task) UntilDone() (time.Duration, bool) {
 	if t.workingSpeed == 0 {
-		return time.Hour, false
+		return time.Millisecond * 10, false
 	}
 	if t.HasReachedTheOtherSide() {
 		timeLeftToInstall := time.Duration((float64(t.size) - t.done) * float64(time.Millisecond) / float64(t.workingSpeed))
