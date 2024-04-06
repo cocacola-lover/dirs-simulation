@@ -17,6 +17,7 @@ type INode interface {
 	ConfirmDownloadMessage(id int, val string, from INode)
 
 	Bm() *bmp.BandwidthManager
+	Close()
 
 	SetSelfAddress(n INode)
 	GetSelfAddress() INode

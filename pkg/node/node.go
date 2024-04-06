@@ -237,6 +237,10 @@ func (n *Node) GetSelfAddress() INode {
 	return n.selfAddress
 }
 
+func (n *Node) Close() {
+	n.Bm().Close()
+}
+
 func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
 	n := &Node{
 		bm:                bmp.NewBandwidthManager(maxDownload, maxUpload),

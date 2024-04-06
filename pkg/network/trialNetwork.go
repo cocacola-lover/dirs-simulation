@@ -42,6 +42,12 @@ func (tn *TrialNetwork) StringVerbose() string {
 	return tn.Logger.StringByIdForEachVerbose(tn.phoneBook)
 }
 
+func (tn *TrialNetwork) Close() {
+	for _, n := range tn.nodes {
+		n.Close()
+	}
+}
+
 func NewTrialNetwork(net *Network) *TrialNetwork {
 	return &TrialNetwork{Network: net}
 }

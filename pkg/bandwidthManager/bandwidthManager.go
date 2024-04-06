@@ -18,6 +18,10 @@ type BandwidthManager struct {
 	scheduler *usp.UrgencyScheduler
 }
 
+func (bm *BandwidthManager) Close() {
+	bm.scheduler.Close()
+}
+
 // Use with go
 func (bm *BandwidthManager) RegisterDownload(size int, with *BandwidthManager, tunnelWidth int, tunnelLength int, onDone func(id int)) int {
 	newTask := NewTask(size, with, tunnelWidth, tunnelLength, onDone)
