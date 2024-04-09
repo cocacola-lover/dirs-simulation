@@ -3,8 +3,13 @@ package nlogger
 import (
 	"dirs/simulation/pkg/node"
 	"sync"
+	"sync/atomic"
 	"time"
 )
+
+func (l *Logger) AddFailedNode() {
+	atomic.StoreInt32(&l.failedNode, atomic.LoadInt32(&l.failedNode)+1)
+}
 
 func addToMapMapArrWithLock(id int, from node.INode, to node.INode, store map[int]map[node.INode][]node.INode, lock *sync.Mutex) {
 	lock.Lock()
@@ -23,8 +28,8 @@ func (l *Logger) AddRouteMessageReceive(id int, from node.INode, to node.INode) 
 	addToMapMapArrWithLock(id, from, to, l.routeMessageReceives, &l.rmrLock)
 }
 
-func (l *Logger) AddFaultMessageReceive(id int, from node.INode, to node.INode) {
-	addToMapMapArrWithLock(id, from, to, l.faultMessageReceives, &l.fmrLock)
+func (l *Logger) AddFaultMessageReceive() {
+	atomic.StoreInt32(&l.faultMessageReceives, atomic.LoadInt32(&l.faultMessageReceives)+1)
 }
 
 func (l *Logger) AddRouteMessageConfirm(id int, from node.INode, to node.INode) {

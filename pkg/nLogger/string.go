@@ -3,6 +3,7 @@ package nlogger
 import (
 	np "dirs/simulation/pkg/node"
 	"fmt"
+	"sync/atomic"
 )
 
 func (l *Logger) StringById(id int) string {
@@ -18,11 +19,6 @@ func (l *Logger) StringById(id int) string {
 		"Have %d message confirms and %d confirms-rejectes\n",
 		countMapArrWithLock(l.routeMessageConfirms[id], &l.rmcLock),
 		countMapArrWithLock(l.deniedRouteMessageConfirms[id], &l.rmcdLock),
-	)
-
-	ans += fmt.Sprintf(
-		"Have %d fault message receives\n",
-		countMapArrWithLock(l.faultMessageReceives[id], &l.fmrLock),
 	)
 
 	ans += fmt.Sprintf(
@@ -85,7 +81,7 @@ func (l *Logger) StringByIdVerbose(id int, phoneBook map[np.INode]int) string {
 
 	ans += fmt.Sprintf(
 		"Have %d fault message receives\n",
-		countMapArrWithLock(l.faultMessageReceives[id], &l.fmrLock),
+		atomic.LoadInt32(&l.faultMessageReceives),
 	)
 
 	l.dLock.Lock()

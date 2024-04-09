@@ -3,6 +3,7 @@ package nlogger
 import (
 	"dirs/simulation/pkg/node"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -38,7 +39,7 @@ func (l *Logger) CountRouteMessageReceives() int {
 	return countMapMapArrWithLock(l.routeMessageReceives, &l.rmrLock)
 }
 func (l *Logger) CountFaultMessageReceives() int {
-	return countMapMapArrWithLock(l.faultMessageReceives, &l.fmrLock)
+	return int(atomic.LoadInt32(&l.faultMessageReceives))
 }
 func (l *Logger) CountRouteMessageConfirms() int {
 	return countMapMapArrWithLock(l.routeMessageConfirms, &l.rmcLock)
@@ -91,6 +92,10 @@ func (l *Logger) CountDownloadPath(id int) int {
 	return l.countDownloadPathWithoutLock(id)
 }
 
+func (l *Logger) CountFailedNodes() int {
+	return int(atomic.LoadInt32(&l.failedNode))
+}
+
 func (l *Logger) DurationToArriveLocked(id int) (time.Duration, bool) {
 	l.setLock.Lock()
 	defer l.setLock.Unlock()
@@ -129,7 +134,7 @@ func (l *Logger) AverageRouteMessageReceives() float64 {
 	return float64(l.CountRouteMessageReceives()) / float64(len(l.routeMessageReceives))
 }
 func (l *Logger) AverageFaultMessageReceives() float64 {
-	return float64(l.CountFaultMessageReceives()) / float64(len(l.faultMessageReceives))
+	return float64(l.CountFaultMessageReceives()) / float64(len(l.routeMessageReceives))
 }
 func (l *Logger) AverageRouteMessageConfirms() float64 {
 	return float64(l.CountRouteMessageConfirms()) / float64(len(l.routeMessageConfirms))

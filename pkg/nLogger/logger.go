@@ -12,8 +12,6 @@ type Logger struct {
 	// Send in search by id from higher node to lower nodes
 	routeMessageReceives       map[int]map[np.INode][]np.INode
 	deniedRouteMessageReceives map[int]map[np.INode][]np.INode
-	// Send in search by id from higher node to lower nodes
-	faultMessageReceives map[int]map[np.INode][]np.INode
 	// Send in search by id from lower node to higher nodes
 	routeMessageConfirms       map[int]map[np.INode][]np.INode
 	deniedRouteMessageConfirms map[int]map[np.INode][]np.INode
@@ -23,9 +21,11 @@ type Logger struct {
 	// Tracks To - key, from - value
 	downloadMessages map[int]map[np.INode]np.INode
 
+	failedNode           int32
+	faultMessageReceives int32
+
 	setLock sync.Mutex
 	rmrLock sync.Mutex
-	fmrLock sync.Mutex
 	rmcLock sync.Mutex
 
 	rmrdLock sync.Mutex
@@ -38,7 +38,6 @@ type Logger struct {
 func NewLogger() *Logger {
 	return &Logger{
 		routeMessageReceives:       make(map[int]map[np.INode][]np.INode),
-		faultMessageReceives:       make(map[int]map[np.INode][]np.INode),
 		routeMessageConfirms:       make(map[int]map[np.INode][]np.INode),
 		deniedRouteMessageReceives: make(map[int]map[np.INode][]np.INode),
 		deniedRouteMessageConfirms: make(map[int]map[np.INode][]np.INode),
