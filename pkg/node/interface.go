@@ -11,7 +11,7 @@ type INode interface {
 
 	Fail()
 	RetryMessages(ids []int) []int
-	ReceiveFaultMessage(from INode, about []int)
+	ReceiveFaultMessage(from INode, about []int) []int
 
 	ReceiveDownloadMessage(id int, key string, from INode)
 	ConfirmDownloadMessage(id int, val string, from INode)
@@ -25,3 +25,12 @@ type INode interface {
 	PutVal(key, val string)
 	HasKey(key string) (string, bool)
 }
+
+type Method uint
+
+const (
+	ReceiveRouteMethod Method = iota
+	ConfirmRouteMethod
+	ReceiveDownloadMethod
+	ConfirmDownloadMethod
+)

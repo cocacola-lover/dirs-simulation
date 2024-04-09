@@ -1,6 +1,7 @@
 package node
 
 import (
+	"math/rand"
 	"time"
 )
 
@@ -235,4 +236,12 @@ func matchFromAndId(disruptedRoutes []_Request) map[INode][]int {
 	}
 
 	return ans
+}
+
+func (n *Node) seeIfGoingToFail(method Method) bool {
+	if n.getFailChance == nil {
+		return false
+	}
+
+	return rand.Float64() < n.getFailChance(method)
 }

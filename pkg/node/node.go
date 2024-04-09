@@ -3,9 +3,9 @@ package node
 import (
 	bmp "dirs/simulation/pkg/bandwidthManager"
 	idgenerator "dirs/simulation/pkg/idGenerator.go"
+	"fmt"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 type Node struct {
@@ -26,6 +26,7 @@ type Node struct {
 
 	getNetworkFriends func() []INode
 	getNetworkTunnel  func(with INode) (int, int)
+	getFailChance     func(method Method) float64
 	// OuterGetterFunctions^
 }
 
@@ -44,6 +45,11 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
 	if n.hasFailed.Load() {
 		return false
 	}
+	if n.seeIfGoingToFail(ReceiveRouteMethod) {
+		n.GetSelfAddress().Fail()
+		return false
+	}
+
 	n.waitWayFrom(from)
 
 	n.routeRequestsLock.Lock()
@@ -70,6 +76,10 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
 
 func (n *Node) ConfirmRouteMessage(id int, from INode) bool {
 	if n.hasFailed.Load() {
+		return false
+	}
+	if n.seeIfGoingToFail(ConfirmRouteMethod) {
+		n.GetSelfAddress().Fail()
 		return false
 	}
 	n.waitWayFrom(from)
@@ -102,7 +112,7 @@ func (n *Node) Fail() {
 	if n.hasFailed.Load() {
 		return
 	}
-	n.hasFailed.Store(false)
+	n.hasFailed.Store(true)
 	for _, eachFriend := range n.getNetworkFriends() {
 		go eachFriend.ReceiveFaultMessage(n.selfAddress, nil)
 	}
@@ -110,9 +120,10 @@ func (n *Node) Fail() {
 
 // Nil "about" means that neighbor node failed, otherwise
 // failure was experienced down the route.
-func (n *Node) ReceiveFaultMessage(from INode, about []int) {
+// Returns disrupted ids
+func (n *Node) ReceiveFaultMessage(from INode, about []int) []int {
 	if n.hasFailed.Load() {
-		return
+		return nil
 	}
 	n.waitWayFrom(from)
 
@@ -143,13 +154,26 @@ func (n *Node) ReceiveFaultMessage(from INode, about []int) {
 		disruptedRoutes = append(disruptedRoutes, n.clearFromRoutedToById(from, about)...)
 	}
 
+	disruptedIds := make([]int, 0, len(disruptedRoutes))
+
+	n.doneMessagesLock.Lock()
+	defer n.doneMessagesLock.Unlock()
+
 	for node, ids := range matchFromAndId(disruptedRoutes) {
+
+		for _, id := range ids {
+			n.doneMessages[id] = true
+			disruptedIds = append(disruptedIds, id)
+		}
+
 		if node != n.selfAddress {
 			go node.ReceiveFaultMessage(n.selfAddress, ids)
 		} else {
 			go n.selfAddress.RetryMessages(ids)
 		}
 	}
+
+	return disruptedIds
 
 }
 
@@ -158,16 +182,11 @@ func (n *Node) RetryMessages(ids []int) []int {
 	if n.hasFailed.Load() {
 		return nil
 	}
+
 	newIds := make([]int, len(ids))
 	for i := range ids {
 		newIds[i] = idgenerator.GetId()
 	}
-
-	n.doneMessagesLock.Lock()
-	for _, id := range ids {
-		n.doneMessages[id] = true
-	}
-	n.doneMessagesLock.Unlock()
 
 	n.routeRequestsLock.RLock()
 	defer n.routeRequestsLock.RUnlock()
@@ -184,9 +203,16 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {
 	if n.hasFailed.Load() {
 		return
 	}
+	if n.seeIfGoingToFail(ReceiveDownloadMethod) {
+		n.GetSelfAddress().Fail()
+		return
+	}
 
-	_, tunnelLength := n.getTunnel(from)
-	time.Sleep(time.Millisecond * time.Duration(tunnelLength))
+	n.waitWayFrom(from)
+
+	if n.isInDoneMessages(id) {
+		return
+	}
 
 	val, ok := n.selfAddress.HasKey(key)
 
@@ -198,7 +224,8 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {
 
 		r, ok := n.setAwaitingFromForRequest(id)
 		if !ok {
-			panic("Can not set awating on receiveDownloadMessage")
+			errorMessage := fmt.Sprintf("Can not set awating on receiveDownloadMessage with node %p", n.GetSelfAddress())
+			panic(errorMessage)
 		}
 		go r.awaitingFrom.ReceiveDownloadMessage(id, key, n.selfAddress)
 	}
@@ -208,6 +235,11 @@ func (n *Node) ConfirmDownloadMessage(id int, val string, from INode) {
 	if n.hasFailed.Load() {
 		return
 	}
+	if n.seeIfGoingToFail(ConfirmDownloadMethod) {
+		n.GetSelfAddress().Fail()
+		return
+	}
+
 	tunnelWidth, tunnelLength := n.getTunnel(from)
 	n.bm.RegisterDownload(len(val), from.Bm(), tunnelWidth, tunnelLength, func(_ int) {
 		n.doneMessagesLock.Lock()
@@ -254,8 +286,13 @@ func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []INode, g
 	return n
 }
 
-func (n *Node) SetOuterFunctions(getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
+func (n *Node) SetOuterFunctions(
+	getNetworkFriends func() []INode,
+	getNetworkTunnel func(with INode) (int, int),
+	getFailChance func(method Method) float64,
+) *Node {
 	n.getNetworkFriends = getNetworkFriends
 	n.getNetworkTunnel = getNetworkTunnel
+	n.getFailChance = getFailChance
 	return n
 }
