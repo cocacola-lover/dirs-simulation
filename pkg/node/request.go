@@ -1,6 +1,6 @@
 package node
 
-type _Request struct {
+type Request struct {
 	id           int
 	key          string
 	from         INode
@@ -9,6 +9,10 @@ type _Request struct {
 	awaitingFrom INode
 }
 
-func _NewRequest(id int, key string, from INode) _Request {
-	return _Request{id: id, key: key, from: from}
+func (r Request) Id() int {
+	return r.id
+}
+
+func _NewRequest(id int, key string, from INode) Request {
+	return Request{id: id, key: key, from: from}
 }

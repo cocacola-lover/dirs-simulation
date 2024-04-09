@@ -10,7 +10,7 @@ type INode interface {
 	// Returns whether message was accepted or rejected ^
 
 	Fail()
-	RetryMessages(ids []int) []int
+	RetryMessages(ids []Request) []int
 	ReceiveFaultMessage(from INode, about []int) []int
 
 	ReceiveDownloadMessage(id int, key string, from INode)

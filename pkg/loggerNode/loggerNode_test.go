@@ -151,7 +151,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 
 		id := node1.StartSearchAndWatch("key")
 
-		node1.WaitToFinishAllSearches()
+		node1.WaitToFinishAllSearches(nil)
 
 		_, ok := baseNode1.HasKey("key")
 

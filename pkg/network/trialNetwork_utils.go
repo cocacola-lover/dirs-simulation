@@ -23,12 +23,19 @@ func devideSearchersAndHavers(size int, request SearchRequest) ([]int, []int) {
 		usedValues[v] = true
 	}
 
-	searchers := []int{}
+	searchers := make([]int, 0, request.NumberOfSearchers)
 	for i := 0; i < request.NumberOfSearchers; i++ {
 		ind := crp.Rand.Intn(size)
 
-		for _, ok := usedValues[ind]; ok; _, ok = usedValues[ind] {
+		for _, ok := usedValues[ind]; ok && len(hasInStore)+len(searchers) < size; _, ok = usedValues[ind] {
 			ind = crp.Rand.Intn(size)
+		}
+
+		if len(hasInStore)+len(searchers) == size {
+			for len(searchers) < request.NumberOfSearchers {
+				searchers = append(searchers, hasInStore[len(hasInStore)-1])
+				hasInStore = hasInStore[:len(hasInStore)-1]
+			}
 		}
 
 		searchers = append(searchers, ind)

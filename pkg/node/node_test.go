@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-var newRouteRequest = func(id int, key string, from INode, routedTo []INode, sentTo []INode, awaitingFrom INode) _Request {
-	return _Request{
+var newRouteRequest = func(id int, key string, from INode, routedTo []INode, sentTo []INode, awaitingFrom INode) Request {
+	return Request{
 		id:           id,
 		key:          key,
 		from:         from,

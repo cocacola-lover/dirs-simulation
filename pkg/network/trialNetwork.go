@@ -1,5 +1,9 @@
 package network
 
+import (
+	"sync"
+)
+
 type SearchRequest struct {
 	Id  int
 	Val string
@@ -14,15 +18,30 @@ type TrialNetwork struct {
 	*Network
 }
 
-func (tn *TrialNetwork) WaitToFinishAllSearchers() {
+func (tn *TrialNetwork) WaitToFinishAllSearchers() chan bool {
+	waitGroup := &sync.WaitGroup{}
+	waitGroup.Add(len(tn.nodes))
+
 	for _, each := range tn.nodes {
-		each.WaitToFinishAllSearches()
+		go each.WaitToFinishAllSearches(waitGroup)
 	}
+
+	exitCh := make(chan bool)
+
+	go func() {
+		waitGroup.Wait()
+		close(exitCh)
+	}()
+
+	return exitCh
 }
 
 func (tn *TrialNetwork) RunRequests(reqs []SearchRequest) {
 	for _, req := range reqs {
 		searchers, havers := devideSearchersAndHavers(len(tn.nodes), req)
+
+		// fmt.Printf("Searchers are %v\n", searchers)
+		// fmt.Printf("Havers are %v\n", havers)
 
 		for _, each := range havers {
 			tn.Get(each).INode.PutVal(req.Key, req.Val)

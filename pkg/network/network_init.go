@@ -95,7 +95,7 @@ func NewFailingNetwork(size, degree int, logger *lp.Logger) *Network {
 				return net.GetTunnel(n, with)
 			}, func(method np.Method) float64 {
 				if method == np.ReceiveDownloadMethod {
-					return 0.5
+					return 0.1
 				}
 				return 0
 			},

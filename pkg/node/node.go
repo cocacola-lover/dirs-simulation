@@ -15,7 +15,7 @@ type Node struct {
 	store     map[string]string
 	storeLock sync.RWMutex
 
-	routeRequests     []_Request
+	routeRequests     []Request
 	routeRequestsLock sync.RWMutex
 
 	doneMessages     map[int]bool
@@ -130,7 +130,7 @@ func (n *Node) ReceiveFaultMessage(from INode, about []int) []int {
 	n.routeRequestsLock.Lock()
 	defer n.routeRequestsLock.Unlock()
 
-	disruptedRoutes := []_Request{}
+	disruptedRoutes := []Request{}
 
 	if about == nil {
 		for _, eachR := range n.findDisruptedDownloads(from) {
@@ -160,7 +160,6 @@ func (n *Node) ReceiveFaultMessage(from INode, about []int) []int {
 	defer n.doneMessagesLock.Unlock()
 
 	for node, ids := range matchFromAndId(disruptedRoutes) {
-
 		for _, id := range ids {
 			n.doneMessages[id] = true
 			disruptedIds = append(disruptedIds, id)
@@ -169,7 +168,8 @@ func (n *Node) ReceiveFaultMessage(from INode, about []int) []int {
 		if node != n.selfAddress {
 			go node.ReceiveFaultMessage(n.selfAddress, ids)
 		} else {
-			go n.selfAddress.RetryMessages(ids)
+			rs := n.removeRequests(ids...)
+			go n.selfAddress.RetryMessages(rs)
 		}
 	}
 
@@ -178,20 +178,16 @@ func (n *Node) ReceiveFaultMessage(from INode, about []int) []int {
 }
 
 // Returns new ids for retried messages
-func (n *Node) RetryMessages(ids []int) []int {
+func (n *Node) RetryMessages(rs []Request) []int {
 	if n.hasFailed.Load() {
 		return nil
 	}
 
-	newIds := make([]int, len(ids))
-	for i := range ids {
-		newIds[i] = idgenerator.GetId()
+	newIds := make([]int, 0, len(rs))
+	for range rs {
+		newIds = append(newIds, idgenerator.GetId())
 	}
 
-	n.routeRequestsLock.RLock()
-	defer n.routeRequestsLock.RUnlock()
-
-	rs := n.removeRequests(ids...)
 	for i, eachR := range rs {
 		go n.selfAddress.ReceiveRouteMessage(newIds[i], eachR.key, n.selfAddress)
 	}
@@ -210,6 +206,9 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {
 
 	n.waitWayFrom(from)
 
+	n.routeRequestsLock.Lock()
+	defer n.routeRequestsLock.Unlock()
+
 	if n.isInDoneMessages(id) {
 		return
 	}
@@ -219,8 +218,6 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {
 	if ok {
 		go from.ConfirmDownloadMessage(id, val, n.selfAddress)
 	} else {
-		n.routeRequestsLock.Lock()
-		defer n.routeRequestsLock.Unlock()
 
 		r, ok := n.setAwaitingFromForRequest(id)
 		if !ok {
@@ -243,13 +240,16 @@ func (n *Node) ConfirmDownloadMessage(id int, val string, from INode) {
 	tunnelWidth, tunnelLength := n.getTunnel(from)
 	n.bm.RegisterDownload(len(val), from.Bm(), tunnelWidth, tunnelLength, func(_ int) {
 		n.doneMessagesLock.Lock()
+		if _, ok := n.doneMessages[id]; ok {
+			return
+		}
 		n.doneMessages[id] = true
 		n.doneMessagesLock.Unlock()
 
 		n.routeRequestsLock.Lock()
 		defer n.routeRequestsLock.Unlock()
 
-		r := n.removeRequest(id)
+		r := n.removeRequest(id, from)
 
 		if r.from == n.selfAddress {
 			n.selfAddress.PutVal(r.key, val)

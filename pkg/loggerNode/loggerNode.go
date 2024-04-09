@@ -78,12 +78,12 @@ func (ln *LoggerNode) PutVal(key, val string) {
 	}
 }
 
-func (ln *LoggerNode) WaitToFinishAllSearches() {
+func (ln *LoggerNode) WaitToFinishAllSearches(waitGroup *sync.WaitGroup) {
 	for {
 		ln.searchesLock.Lock()
 		if len(ln.searches) == 0 {
 			ln.searchesLock.Unlock()
-			return
+			break
 		}
 
 		var pickCh chan bool
@@ -95,12 +95,20 @@ func (ln *LoggerNode) WaitToFinishAllSearches() {
 
 		<-pickCh
 	}
+	if waitGroup != nil {
+		waitGroup.Done()
+	}
 }
 
-func (ln *LoggerNode) RetryMessages(ids []int) []int {
-	newIds := ln.SearcherNode.RetryMessages(ids)
+func (ln *LoggerNode) RetryMessages(rs []node.Request) []int {
+	newIds := ln.SearcherNode.RetryMessages(rs)
 
-	ln.logger.ChangeIdForMessages(ids, newIds)
+	oldIds := make([]int, 0, len(rs))
+	for _, rs := range rs {
+		oldIds = append(oldIds, rs.Id())
+	}
+
+	ln.logger.ChangeIdForMessages(oldIds, newIds)
 
 	return newIds
 }
