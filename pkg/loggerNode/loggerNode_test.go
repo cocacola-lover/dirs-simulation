@@ -33,8 +33,8 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		node1 := NewLoggerNode(searchernode.NewSearchNode(baseNode1), logger)
 		node2 := NewLoggerNode(searchernode.NewSearchNode(baseNode2), logger)
 
-		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory())
-		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory())
+		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory(), nil)
+		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory(), nil)
 
 		baseNode2.PutVal("key", "value")
 
@@ -92,12 +92,12 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		node5 := NewLoggerNode(searchernode.NewSearchNode(baseNode5), logger)
 		node6 := NewLoggerNode(searchernode.NewSearchNode(baseNode6), logger)
 
-		baseNode1.SetOuterFunctions(friendsFactory(node2, node3), tunnelFactory())
-		baseNode2.SetOuterFunctions(friendsFactory(node1, node6), tunnelFactory())
-		baseNode3.SetOuterFunctions(friendsFactory(node1, node4), tunnelFactory())
-		baseNode4.SetOuterFunctions(friendsFactory(node3, node5), tunnelFactory())
-		baseNode5.SetOuterFunctions(friendsFactory(node4, node6), tunnelFactory())
-		baseNode6.SetOuterFunctions(friendsFactory(node5, node2), tunnelFactory())
+		baseNode1.SetOuterFunctions(friendsFactory(node2, node3), tunnelFactory(), nil)
+		baseNode2.SetOuterFunctions(friendsFactory(node1, node6), tunnelFactory(), nil)
+		baseNode3.SetOuterFunctions(friendsFactory(node1, node4), tunnelFactory(), nil)
+		baseNode4.SetOuterFunctions(friendsFactory(node3, node5), tunnelFactory(), nil)
+		baseNode5.SetOuterFunctions(friendsFactory(node4, node6), tunnelFactory(), nil)
+		baseNode6.SetOuterFunctions(friendsFactory(node5, node2), tunnelFactory(), nil)
 
 		for i, n := range []node.INode{node1, node2, node3, node4, node5, node6} {
 			log.Printf("Node%d has a pointer of %p\n", i+1, n)
@@ -144,8 +144,8 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		node1 := NewLoggerNode(searchernode.NewSearchNode(baseNode1), logger)
 		node2 := NewLoggerNode(searchernode.NewSearchNode(baseNode2), logger)
 
-		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory())
-		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory())
+		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory(), nil)
+		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory(), nil)
 
 		baseNode2.PutVal("key", "value")
 

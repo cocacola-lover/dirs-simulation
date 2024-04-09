@@ -97,6 +97,24 @@ func (ln *LoggerNode) WaitToFinishAllSearches() {
 	}
 }
 
+func (ln *LoggerNode) RetryMessages(ids []int) []int {
+	newIds := ln.SearcherNode.RetryMessages(ids)
+
+	ln.logger.ChangeIdForMessages(ids, newIds)
+
+	return newIds
+}
+
+func (ln *LoggerNode) Fail() {
+	ln.SearcherNode.Fail()
+	go ln.logger.AddFailedNode()
+}
+
+func (ln *LoggerNode) ReceiveFaultMessage(from node.INode, about []int) []int {
+	go ln.logger.AddFaultMessageReceive()
+	return ln.SearcherNode.ReceiveFaultMessage(from, about)
+}
+
 func (ln *LoggerNode) Close() {
 	ln.SearcherNode.Close()
 

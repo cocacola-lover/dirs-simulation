@@ -13,11 +13,11 @@ func TestSearchNode(t *testing.T) {
 
 		node1.SetOuterFunctions(
 			func() []node.INode { return []node.INode{node2} },
-			func(with node.INode) (int, int) { return 1, 1 },
+			func(with node.INode) (int, int) { return 1, 1 }, nil,
 		)
 		node2.SetOuterFunctions(
 			func() []node.INode { return []node.INode{node1} },
-			func(with node.INode) (int, int) { return 1, 1 },
+			func(with node.INode) (int, int) { return 1, 1 }, nil,
 		)
 		node2.PutVal("key", "value")
 
