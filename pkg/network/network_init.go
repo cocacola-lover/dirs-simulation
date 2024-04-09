@@ -70,6 +70,34 @@ func NewBaseNetwork(size, degree int, logger *lp.Logger) *Network {
 				return net.GetFriends(n)
 			}, func(with np.INode) (int, int) {
 				return net.GetTunnel(n, with)
+			}, nil,
+		)
+
+		return n
+	}, size, degree, logger)
+}
+
+// Test Network that is populated by failing nodes.
+func NewFailingNetwork(size, degree int, logger *lp.Logger) *Network {
+	return NewRandomNetwork(func(net *Network, i int) *lnp.LoggerNode {
+		bn := np.NewNode(
+			crp.Rand.Intn(10)+1,
+			crp.Rand.Intn(10)+1,
+			nil, nil,
+		)
+
+		n := lnp.NewLoggerNode(searchernode.NewSearchNode(bn), net.Logger)
+
+		bn.SetOuterFunctions(
+			func() []np.INode {
+				return net.GetFriends(n)
+			}, func(with np.INode) (int, int) {
+				return net.GetTunnel(n, with)
+			}, func(method np.Method) float64 {
+				if method == np.ReceiveDownloadMethod {
+					return 0.5
+				}
+				return 0
 			},
 		)
 
