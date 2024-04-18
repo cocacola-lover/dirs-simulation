@@ -88,21 +88,36 @@ func NewFailingNetwork(size, degree int, chanceOfFaulty float64, logger *lp.Logg
 
 		n := lnp.NewLoggerNode(searchernode.NewSearchNode(bn), net.Logger)
 
-		bn.SetOuterFunctions(
-			func() []np.INode {
-				return net.GetFriends(n)
-			}, func(with np.INode) (int, int) {
-				return net.GetTunnel(n, with)
-			}, func(method np.Method) float64 {
-
-				switch method {
-				case np.ReceiveRouteMethod:
-					return 0.0005
-				default:
-					return 0
-				}
-			},
-		)
+		if crp.Rand.Float64() > chanceOfFaulty {
+			bn.SetOuterFunctions(
+				func() []np.INode {
+					return net.GetFriends(n)
+				}, func(with np.INode) (int, int) {
+					return net.GetTunnel(n, with)
+				}, nil,
+			)
+		} else {
+			bn.SetOuterFunctions(
+				func() []np.INode {
+					return net.GetFriends(n)
+				}, func(with np.INode) (int, int) {
+					return net.GetTunnel(n, with)
+				}, func(method np.Method) float64 {
+					switch method {
+					case np.ReceiveRouteMethod:
+						return 0.1
+					case np.ConfirmRouteMethod:
+						return 0.2
+					case np.ReceiveDownloadMethod:
+						return 0.3
+					case np.ConfirmDownloadMethod:
+						return 0.5
+					default:
+						return 0
+					}
+				},
+			)
+		}
 
 		return n
 	}, size, degree, logger)
