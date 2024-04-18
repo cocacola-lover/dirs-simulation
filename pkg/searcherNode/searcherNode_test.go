@@ -19,14 +19,14 @@ func TestSearchNode(t *testing.T) {
 			func() []node.INode { return []node.INode{node1} },
 			func(with node.INode) (int, int) { return 1, 1 }, nil,
 		)
-		node2.PutVal("key", "value")
+		node2.AddToStore("key", "value")
 
 		searchNode1 := NewSearchNode(node1)
 		stopCh := make(chan bool)
 		searchNode1.StartSearchAndWatch("key", stopCh)
 
 		_, ok1 := <-stopCh
-		value, ok := node1.HasKey("key")
+		value, ok := node1.ReceivedKey("key")
 
 		if ok1 || !ok || value != "value" {
 			t.Fatalf("Adding to store failed\n")

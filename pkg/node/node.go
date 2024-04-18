@@ -12,8 +12,11 @@ type Node struct {
 	hasFailed atomic.Bool
 
 	// Store holds key-value pairs
-	store     map[string]string
-	storeLock sync.RWMutex
+	storage     map[string]string
+	storageLock sync.RWMutex
+
+	receivedValues     map[string]string
+	receivedValuesLock sync.RWMutex
 
 	routeRequests     []Request
 	routeRequestsLock sync.RWMutex
@@ -59,7 +62,7 @@ func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
 		return false
 	}
 
-	_, ok := n.selfAddress.HasKey(key)
+	_, ok := n.selfAddress.HasInStore(key)
 
 	if ok {
 		go from.ConfirmRouteMessage(id, n.selfAddress)
@@ -213,7 +216,7 @@ func (n *Node) ReceiveDownloadMessage(id int, key string, from INode) {
 		return
 	}
 
-	val, ok := n.selfAddress.HasKey(key)
+	val, ok := n.selfAddress.HasInStore(key)
 
 	if ok {
 		go from.ConfirmDownloadMessage(id, val, n.selfAddress)
@@ -252,7 +255,7 @@ func (n *Node) ConfirmDownloadMessage(id int, val string, from INode) {
 		r := n.removeRequest(id, from)
 
 		if r.from == n.selfAddress {
-			n.selfAddress.PutVal(r.key, val)
+			n.selfAddress.PutKey(r.key, val)
 		} else {
 			go r.from.ConfirmDownloadMessage(id, val, n.selfAddress)
 		}
@@ -269,6 +272,10 @@ func (n *Node) GetSelfAddress() INode {
 	return n.selfAddress
 }
 
+func (n *Node) HasFailed() bool {
+	return n.hasFailed.Load()
+}
+
 func (n *Node) Close() {
 	n.hasFailed.Store(true)
 	n.Bm().Close()
@@ -277,7 +284,8 @@ func (n *Node) Close() {
 func NewNode(maxDownload int, maxUpload int, getNetworkFriends func() []INode, getNetworkTunnel func(with INode) (int, int)) *Node {
 	n := &Node{
 		bm:                bmp.NewBandwidthManager(maxDownload, maxUpload),
-		store:             make(map[string]string),
+		storage:           make(map[string]string),
+		receivedValues:    make(map[string]string),
 		doneMessages:      make(map[int]bool),
 		getNetworkFriends: getNetworkFriends,
 		getNetworkTunnel:  getNetworkTunnel,

@@ -36,13 +36,13 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory(), nil)
 		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory(), nil)
 
-		baseNode2.PutVal("key", "value")
+		baseNode2.AddToStore("key", "value")
 
 		id := node1.StartSearchAndWatch("key")
 
 		time.Sleep(30 * time.Millisecond)
 
-		_, ok := baseNode1.HasKey("key")
+		_, ok := baseNode1.ReceivedKey("key")
 
 		if !ok {
 			t.Error("Adding to store failed \n")
@@ -103,13 +103,13 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 			log.Printf("Node%d has a pointer of %p\n", i+1, n)
 		}
 
-		baseNode4.PutVal("key", "value")
+		baseNode4.AddToStore("key", "value")
 
 		id := node1.StartSearchAndWatch("key")
 
 		time.Sleep(100 * time.Millisecond)
 
-		_, ok := baseNode1.HasKey("key")
+		_, ok := baseNode1.ReceivedKey("key")
 
 		if !ok {
 			t.Error("Adding to store failed \n")
@@ -147,13 +147,13 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 		baseNode1.SetOuterFunctions(friendsFactory(node2), tunnelFactory(), nil)
 		baseNode2.SetOuterFunctions(friendsFactory(node1), tunnelFactory(), nil)
 
-		baseNode2.PutVal("key", "value")
+		baseNode2.AddToStore("key", "value")
 
 		id := node1.StartSearchAndWatch("key")
 
 		node1.WaitToFinishAllSearches(nil)
 
-		_, ok := baseNode1.HasKey("key")
+		_, ok := baseNode1.ReceivedKey("key")
 
 		if !ok {
 			t.Error("Adding to store failed \n")

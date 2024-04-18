@@ -6,19 +6,34 @@ import (
 	"time"
 )
 
-func (n *Node) HasKey(key string) (string, bool) {
-	n.storeLock.RLock()
-	defer n.storeLock.RUnlock()
+func (n *Node) AddToStore(key, val string) {
+	n.storageLock.Lock()
+	defer n.storageLock.Unlock()
 
-	v, ok := n.store[key]
+	n.storage[key] = val
+}
+
+func (n *Node) HasInStore(key string) (string, bool) {
+	n.storageLock.RLock()
+	defer n.storageLock.RUnlock()
+
+	v, ok := n.storage[key]
 	return v, ok
 }
 
-func (n *Node) PutVal(key, val string) {
-	n.storeLock.Lock()
-	defer n.storeLock.Unlock()
+func (n *Node) ReceivedKey(key string) (string, bool) {
+	n.receivedValuesLock.RLock()
+	defer n.receivedValuesLock.RUnlock()
 
-	n.store[key] = val
+	v, ok := n.receivedValues[key]
+	return v, ok
+}
+
+func (n *Node) PutKey(key, val string) {
+	n.receivedValuesLock.Lock()
+	defer n.receivedValuesLock.Unlock()
+
+	n.receivedValues[key] = val
 }
 
 // Returns an array of friends to which did "do"

@@ -62,8 +62,8 @@ func (ln *LoggerNode) StartSearchAndWatch(key string) int {
 	return id
 }
 
-func (ln *LoggerNode) PutVal(key, val string) {
-	ln.SearcherNode.PutVal(key, val)
+func (ln *LoggerNode) PutKey(key, val string) {
+	ln.SearcherNode.PutKey(key, val)
 
 	ln.searchesLock.Lock()
 	defer ln.searchesLock.Unlock()
@@ -102,6 +102,9 @@ func (ln *LoggerNode) WaitToFinishAllSearches(waitGroup *sync.WaitGroup) {
 
 func (ln *LoggerNode) RetryMessages(rs []node.Request) []int {
 	newIds := ln.SearcherNode.RetryMessages(rs)
+	if newIds == nil {
+		return nil
+	}
 
 	oldIds := make([]int, 0, len(rs))
 	for _, rs := range rs {

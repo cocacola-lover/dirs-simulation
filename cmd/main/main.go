@@ -7,22 +7,21 @@ import (
 	"time"
 )
 
-func runExperiment(logger *nlogger.Logger) {
+func runExperiment(logger *nlogger.Logger) int {
 	n := 1000
 
-	trialNet := netp.NewTrialNetwork(netp.NewFailingNetwork(n, 3, logger))
+	trialNet := netp.NewTrialNetwork(netp.NewFailingNetwork(n, 3, 0.01, logger))
 
 	// for i := 0; i < n; i++ {
 	// 	fmt.Printf("Node%d has a pointer of %p\n", i, trialNet.Get(i))
 	// }
 
-	trialNet.RunRequests([]netp.SearchRequest{{
-		Id:                0,
+	havers, _ := trialNet.RunRequest(netp.SearchRequest{
 		Key:               fmt.Sprint(0),
 		Val:               "val",
 		Popularity:        0.005,
-		NumberOfSearchers: 10,
-	}})
+		NumberOfSearchers: 100,
+	})
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -31,8 +30,17 @@ func runExperiment(logger *nlogger.Logger) {
 	case <-trialNet.WaitToFinishAllSearchers():
 	}
 
-	// fmt.Print(trialNet.Graph)
+	failedHavers := 0
+
+	for _, i := range havers {
+		if trialNet.Get(i).HasFailed() {
+			failedHavers++
+		}
+	}
+
 	trialNet.Close()
+
+	return failedHavers
 }
 
 func main() {
@@ -41,14 +49,16 @@ func main() {
 
 	logger := nlogger.NewLogger()
 
+	var failedHavers float64 = 0
 	for i := 0; i < expN; i++ {
-		runExperiment(logger)
+		failedHavers += float64(runExperiment(logger))
 	}
 
 	fmt.Print(logger.String())
 
 	failed := logger.CountFailedNodes()
 	fmt.Printf("On average %v node failed\n", float64(failed)/float64(expN))
+	fmt.Printf("On average %v havers failed\n", failedHavers/float64(expN))
 
 	_, didntReach := logger.AverageDurationToArriveLocked()
 	if didntReach != 0 {

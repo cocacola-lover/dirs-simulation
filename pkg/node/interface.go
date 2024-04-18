@@ -17,13 +17,17 @@ type INode interface {
 	ConfirmDownloadMessage(id int, val string, from INode)
 
 	Bm() *bmp.BandwidthManager
+	HasFailed() bool
 	Close()
 
 	SetSelfAddress(n INode)
 	GetSelfAddress() INode
 
-	PutVal(key, val string)
-	HasKey(key string) (string, bool)
+	PutKey(key, val string)
+	ReceivedKey(key string) (string, bool)
+
+	AddToStore(key, val string)
+	HasInStore(key string) (string, bool)
 }
 
 type Method uint

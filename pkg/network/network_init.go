@@ -78,7 +78,7 @@ func NewBaseNetwork(size, degree int, logger *lp.Logger) *Network {
 }
 
 // Test Network that is populated by failing nodes.
-func NewFailingNetwork(size, degree int, logger *lp.Logger) *Network {
+func NewFailingNetwork(size, degree int, chanceOfFaulty float64, logger *lp.Logger) *Network {
 	return NewRandomNetwork(func(net *Network, i int) *lnp.LoggerNode {
 		bn := np.NewNode(
 			crp.Rand.Intn(10)+1,
@@ -94,10 +94,13 @@ func NewFailingNetwork(size, degree int, logger *lp.Logger) *Network {
 			}, func(with np.INode) (int, int) {
 				return net.GetTunnel(n, with)
 			}, func(method np.Method) float64 {
-				if method == np.ReceiveDownloadMethod {
-					return 0.1
+
+				switch method {
+				case np.ReceiveRouteMethod:
+					return 0.0005
+				default:
+					return 0
 				}
-				return 0
 			},
 		)
 

@@ -20,8 +20,8 @@ func (sn *SearcherNode) StartSearchAndWatch(key string, ch chan bool) int {
 	return sn.GetSelfAddress().StartSearch(key)
 }
 
-func (sn *SearcherNode) PutVal(key, val string) {
-	sn.INode.PutVal(key, val)
+func (sn *SearcherNode) PutKey(key, val string) {
+	sn.INode.PutKey(key, val)
 
 	sn.searchesLock.Lock()
 	defer sn.searchesLock.Unlock()

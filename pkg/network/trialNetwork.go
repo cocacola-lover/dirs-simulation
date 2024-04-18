@@ -5,7 +5,6 @@ import (
 )
 
 type SearchRequest struct {
-	Id  int
 	Val string
 	Key string
 
@@ -36,21 +35,24 @@ func (tn *TrialNetwork) WaitToFinishAllSearchers() chan bool {
 	return exitCh
 }
 
-func (tn *TrialNetwork) RunRequests(reqs []SearchRequest) {
-	for _, req := range reqs {
-		searchers, havers := devideSearchersAndHavers(len(tn.nodes), req)
+// Returns havers and searchers
+func (tn *TrialNetwork) RunRequest(req SearchRequest) ([]int, []int) {
 
-		// fmt.Printf("Searchers are %v\n", searchers)
-		// fmt.Printf("Havers are %v\n", havers)
+	searchers, havers := devideSearchersAndHavers(len(tn.nodes), req)
 
-		for _, each := range havers {
-			tn.Get(each).INode.PutVal(req.Key, req.Val)
-		}
+	// fmt.Printf("Searchers are %v\n", searchers)
+	// fmt.Printf("Havers are %v\n", havers)
 
-		for _, each := range searchers {
-			go tn.Get(each).StartSearchAndWatch(req.Key)
-		}
+	for _, each := range havers {
+		tn.Get(each).INode.AddToStore(req.Key, req.Val)
 	}
+
+	for _, each := range searchers {
+		go tn.Get(each).StartSearchAndWatch(req.Key)
+	}
+
+	return havers, searchers
+
 }
 
 func (tn *TrialNetwork) String() string {
