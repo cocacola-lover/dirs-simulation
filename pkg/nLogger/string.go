@@ -164,11 +164,8 @@ func (l *Logger) String() string {
 		l.AverageDownloadMessages(),
 	)
 
-	dur, didntReach := l.AverageDurationToArriveLocked()
+	dur, _ := l.AverageDurationToArriveLocked()
 	ans += fmt.Sprintf("The average download took %v\n", dur)
-	if didntReach != 0 {
-		ans += fmt.Sprintf("WARNING : %d message never reached root\n", didntReach)
-	}
 
 	return ans
 }
