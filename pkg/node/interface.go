@@ -3,7 +3,7 @@ package node
 import bmp "dirs/simulation/pkg/bandwidthManager"
 
 type INode interface {
-	StartSearch(key string) int
+	StartSearch(key string) (int, bool)
 
 	ReceiveRouteMessage(id int, key string, from INode) bool
 	ConfirmRouteMessage(id int, from INode) bool

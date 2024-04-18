@@ -12,12 +12,19 @@ type SearcherNode struct {
 	searchesLock sync.RWMutex
 }
 
-func (sn *SearcherNode) StartSearchAndWatch(key string, ch chan bool) int {
+func (sn *SearcherNode) StartSearchAndWatch(key string, ch chan bool) (int, bool) {
+
+	id, ok := sn.GetSelfAddress().StartSearch(key)
+
+	if !ok {
+		return id, false
+	}
+
 	sn.searchesLock.Lock()
 	sn.searches[key] = ch
 	sn.searchesLock.Unlock()
 
-	return sn.GetSelfAddress().StartSearch(key)
+	return id, true
 }
 
 func (sn *SearcherNode) PutKey(key, val string) {

@@ -38,7 +38,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 
 		baseNode2.AddToStore("key", "value")
 
-		id := node1.StartSearchAndWatch("key")
+		id, _ := node1.StartSearchAndWatch("key")
 
 		time.Sleep(30 * time.Millisecond)
 
@@ -105,7 +105,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 
 		baseNode4.AddToStore("key", "value")
 
-		id := node1.StartSearchAndWatch("key")
+		id, _ := node1.StartSearchAndWatch("key")
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -149,7 +149,7 @@ func TestNode_ReceiveRouteMessage(t *testing.T) {
 
 		baseNode2.AddToStore("key", "value")
 
-		id := node1.StartSearchAndWatch("key")
+		id, _ := node1.StartSearchAndWatch("key")
 
 		node1.WaitToFinishAllSearches(nil)
 

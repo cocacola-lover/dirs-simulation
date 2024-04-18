@@ -48,10 +48,14 @@ func (ln *LoggerNode) ConfirmDownloadMessage(id int, val string, from node.INode
 	go ln.logger.AddDownloadMessage(id, from, ln.GetSelfAddress())
 }
 
-func (ln *LoggerNode) StartSearchAndWatch(key string) int {
+func (ln *LoggerNode) StartSearchAndWatch(key string) (int, bool) {
 
 	ch := make(chan bool)
-	id := ln.SearcherNode.StartSearchAndWatch(key, ch)
+	id, ok := ln.SearcherNode.StartSearchAndWatch(key, ch)
+
+	if !ok {
+		return 0, false
+	}
 
 	ln.searchesLock.Lock()
 	ln.searches[id] = ch
@@ -59,7 +63,7 @@ func (ln *LoggerNode) StartSearchAndWatch(key string) int {
 
 	ln.logger.StartSearch(id, ln.GetSelfAddress())
 
-	return id
+	return id, true
 }
 
 func (ln *LoggerNode) PutKey(key, val string) {

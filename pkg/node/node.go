@@ -33,15 +33,15 @@ type Node struct {
 	// OuterGetterFunctions^
 }
 
-func (n *Node) StartSearch(key string) int {
+func (n *Node) StartSearch(key string) (int, bool) {
 	if n.hasFailed.Load() {
-		panic("Started search on failed node")
+		return 0, false
 	}
 	id := idgenerator.GetId()
 
 	n.selfAddress.ReceiveRouteMessage(id, key, n.selfAddress)
 
-	return id
+	return id, true
 }
 
 func (n *Node) ReceiveRouteMessage(id int, key string, from INode) bool {
