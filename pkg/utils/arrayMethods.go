@@ -1,5 +1,7 @@
 package utils
 
+import "math/rand"
+
 func Find[T any](arr []T, fu func(v T) bool) (T, bool) {
 
 	var zeroValue T
@@ -53,4 +55,14 @@ func Filter[T any](arr []T, filterFn func(val T, ind int) bool) []T {
 	}
 
 	return ans
+}
+
+// Shuffles in place
+func Shuffle[T any](arr []T) []T {
+	for i := range arr {
+		j := rand.Intn(i + 1)
+		arr[i], arr[j] = arr[j], arr[i]
+	}
+
+	return arr
 }

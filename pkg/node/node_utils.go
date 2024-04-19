@@ -1,6 +1,7 @@
 package node
 
 import (
+	"dirs/simulation/pkg/utils"
 	"fmt"
 	"math/rand"
 	"time"
@@ -38,13 +39,21 @@ func (n *Node) PutKey(key, val string) {
 
 // Returns an array of friends to which did "do"
 func (n *Node) forEachFriendExcept(do func(f INode), except INode) []INode {
+
 	if n.getNetworkFriends == nil {
 		return nil
 	}
 
-	fs := n.getNetworkFriends()
+	fs := utils.Shuffle(n.getNetworkFriends())
 
-	for i := 0; i < len(fs); i++ {
+	getTimes := func(arr []INode) int {
+		if len(arr) >= 3 {
+			return len(arr)/2 + 1
+		}
+		return len(arr)
+	}
+
+	for i := 0; i < getTimes(fs); i++ {
 		if fs[i] == except {
 			fs[i] = fs[len(fs)-1]
 			fs = fs[:len(fs)-1]
