@@ -141,27 +141,15 @@ func (l *Logger) String() string {
 
 	ans := "Summary of the experiment :\n"
 
-	ans += fmt.Sprintf(
-		"Have %v average message receives and %v average receives-rejectes\n",
-		l.AverageRouteMessageReceives(),
-		l.AverageDeclinedRouteMessageReceives(),
-	)
+	averageMessages := l.AverageRouteMessageReceives() + l.AverageDeclinedRouteMessageReceives()
+	averageMessages += l.AverageRouteMessageConfirms() + l.AverageDeclinedRouteMessageConfirms()
+	averageMessages += l.AverageFaultMessageReceives() + l.AverageDownloadMessages()
+
+	ans += fmt.Sprintf("Average messages sent - %v\n", averageMessages)
 
 	ans += fmt.Sprintf(
-		"Have %v average message confirms and %v average confirms-rejectes\n",
-		l.AverageRouteMessageConfirms(),
-		l.AverageDeclinedRouteMessageConfirms(),
-	)
-
-	ans += fmt.Sprintf(
-		"Have %v average fault message receives\n",
-		l.AverageFaultMessageReceives(),
-	)
-
-	ans += fmt.Sprintf(
-		"The average download root was of length - %v, but average download messages - %v\n",
+		"The average download root was of length - %v\n",
 		l.AverageDownloadPath(),
-		l.AverageDownloadMessages(),
 	)
 
 	dur, _ := l.AverageDurationToArriveLocked()
