@@ -143,6 +143,28 @@ func (g Graph[T]) GetPaths(n int) ([]int, bool) {
 	return ans, true
 }
 
+// Returns ok - false, if index out of bounds
+func (g Graph[T]) GetDegree(n int) int {
+	ans := 0
+	if g._IsOutOfBounds(n) {
+		panic("GetDegree index out of bounds")
+	}
+
+	for i := 0; i < n; i++ {
+		if g.grid[n][i] != utils.ZeroValue[T]() {
+			ans++
+		}
+	}
+
+	for i := n + 1; i < len(g.grid); i++ {
+		if g.grid[i][n] != utils.ZeroValue[T]() {
+			ans++
+		}
+	}
+
+	return ans
+}
+
 func NewGraph[T comparable](size int) Graph[T] {
 	grid := make([][]T, size)
 
