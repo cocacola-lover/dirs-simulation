@@ -7,29 +7,29 @@ import (
 	"time"
 )
 
-func countMapArr(store map[node.INode][]node.INode) int {
+func countMapArr(store map[node.INode]int) int {
 	ans := 0
 
-	for _, arr := range store {
-		ans += len(arr)
+	for _, v := range store {
+		ans += v
 	}
 
 	return ans
 }
 
-func countMapArrWithLock(store map[node.INode][]node.INode, lock *sync.Mutex) int {
+func countMapArrWithLock(store map[node.INode]int, lock *sync.Mutex) int {
 	lock.Lock()
 	defer lock.Unlock()
 	return countMapArr(store)
 }
 
-func countMapMapArrWithLock(store map[int]map[node.INode][]node.INode, lock *sync.Mutex) int {
+func countMapMapArrWithLock(store map[int]int, lock *sync.Mutex) int {
 	lock.Lock()
 	defer lock.Unlock()
 
 	ans := 0
-	for _, emap := range store {
-		ans += countMapArr(emap)
+	for _, v := range store {
+		ans += v
 	}
 
 	return ans

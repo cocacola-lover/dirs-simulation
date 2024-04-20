@@ -59,10 +59,6 @@ func (tn *TrialNetwork) String() string {
 	return tn.Logger.String()
 }
 
-func (tn *TrialNetwork) StringVerbose() string {
-	return tn.Logger.StringByIdForEachVerbose(tn.phoneBook)
-}
-
 func (tn *TrialNetwork) Close() {
 	for _, n := range tn.nodes {
 		n.Close()

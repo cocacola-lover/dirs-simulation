@@ -11,17 +11,16 @@ func (l *Logger) AddFailedNode() {
 	atomic.StoreInt32(&l.failedNode, atomic.LoadInt32(&l.failedNode)+1)
 }
 
-func addToMapMapArrWithLock(id int, from node.INode, to node.INode, store map[int]map[node.INode][]node.INode, lock *sync.Mutex) {
+func addToMapMapArrWithLock(id int, from node.INode, to node.INode, store map[int]int, lock *sync.Mutex) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	dict, ok := store[id]
+	v, ok := store[id]
 	if !ok {
-		store[id] = make(map[node.INode][]node.INode)
-		dict = store[id]
+		store[id] = 1
+	} else {
+		store[id] = v + 1
 	}
-
-	dict[from] = append(dict[from], to)
 }
 
 func (l *Logger) AddRouteMessageReceive(id int, from node.INode, to node.INode) {

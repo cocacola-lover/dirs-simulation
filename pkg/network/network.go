@@ -50,7 +50,3 @@ func (net Network) String() string {
 	str := net.Graph.String()
 	return str
 }
-
-func (net Network) LoggerStringById(id int) string {
-	return net.Logger.StringByIdVerbose(id, net.phoneBook)
-}

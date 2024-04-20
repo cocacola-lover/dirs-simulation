@@ -10,11 +10,11 @@ type Logger struct {
 	// Start-End timestamps
 	seTimestamps map[int][]time.Time
 	// Send in search by id from higher node to lower nodes
-	routeMessageReceives       map[int]map[np.INode][]np.INode
-	deniedRouteMessageReceives map[int]map[np.INode][]np.INode
+	routeMessageReceives       map[int]int
+	deniedRouteMessageReceives map[int]int
 	// Send in search by id from lower node to higher nodes
-	routeMessageConfirms       map[int]map[np.INode][]np.INode
-	deniedRouteMessageConfirms map[int]map[np.INode][]np.INode
+	routeMessageConfirms       map[int]int
+	deniedRouteMessageConfirms map[int]int
 
 	// Started searches
 	startedSearches map[int]np.INode
@@ -37,10 +37,10 @@ type Logger struct {
 
 func NewLogger() *Logger {
 	return &Logger{
-		routeMessageReceives:       make(map[int]map[np.INode][]np.INode),
-		routeMessageConfirms:       make(map[int]map[np.INode][]np.INode),
-		deniedRouteMessageReceives: make(map[int]map[np.INode][]np.INode),
-		deniedRouteMessageConfirms: make(map[int]map[np.INode][]np.INode),
+		routeMessageReceives:       make(map[int]int),
+		routeMessageConfirms:       make(map[int]int),
+		deniedRouteMessageReceives: make(map[int]int),
+		deniedRouteMessageConfirms: make(map[int]int),
 		downloadMessages:           make(map[int]map[np.INode]np.INode),
 		seTimestamps:               make(map[int][]time.Time),
 		startedSearches:            make(map[int]np.INode),
